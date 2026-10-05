@@ -53,11 +53,36 @@ are duplicated on purpose; a backend test fails at type level and at runtime if 
 
 - Collections are returned as `{ "items": [...] }`, leaving room for pagination fields later.
 - Hierarchies are returned flat, each item with its `parentId`; the client builds the tree.
-- `POST` that creates returns 201 with the resource; `DELETE` returns 204 with no body.
+- `POST` that creates returns 201 with the resource; `DELETE` returns 204 with no body. Transactions
+  have no `DELETE` (see below).
 - Partial updates use `PATCH`: a field left out stays unchanged and `null` removes an optional field.
   Immutable fields are not part of the update contract, so sending them is a 400, never ignored.
   A `PATCH` that changes nothing is a no-op and keeps `updatedAt`.
+- **Transactions are updated by full replacement**, never by `PATCH` ([ADR-0004](0004-ledger-persistence.md)):
+  - `PUT /api/transactions/:id` carries the complete operation, in the same shape as its creation;
+  - `id`, `type` and `createdAt` are immutable; a `PUT` whose operation has a different `type` than
+    the persisted transaction is a 409 `TRANSACTION_TYPE_IMMUTABLE`;
+  - the operation's factory rebuilds the postings, and the exchange rate is recalculated when the
+    operation actually changes; the transaction and its postings are updated atomically;
+  - an operation that changes nothing is a no-op: `updatedAt` and the derived data stay as they
+    were;
+  - editing a voided transaction is a 409 `TRANSACTION_VOIDED`.
+
+  `PATCH` remains the update method for simple resources whose fields are independent.
 - State changes that are not edits are sub-resource actions, e.g. `POST /api/accounts/:id/archive`.
+- **Void** is such an action: `POST /api/transactions/:id/void` returns 200 with the transaction. A
+  transaction is never physically
+  deleted, and `DELETE` on a transaction is a 404 `ROUTE_NOT_FOUND`. Voiding:
+  - keeps the transaction and its postings; the transaction stays identifiable, but leaves the
+    effective ledger, so it no longer counts in any financial calculation;
+  - creates no postings;
+  - is irreversible: there is no unvoid route;
+  - is idempotent (BR-24, ADR-0004): voiding a voided transaction changes nothing and returns 200
+    with the transaction as it was;
+  - does not change `updatedAt`.
+
+  `GET /api/transactions/:id` returns a voided transaction too. Lists leave voided transactions out
+  unless `includeVoided=true`.
 - An append-only resource (e.g. manual exchange rates) has no `PATCH` or `DELETE` route; such a
   request is a 404 `ROUTE_NOT_FOUND`, and a correction is a new resource.
 
@@ -86,7 +111,7 @@ a code but no status, `NotFoundError` (404) and `ConflictError` (409) in
 | --- | --- | --- |
 | 400 | The request does not match the contract, or the body is malformed | `VALIDATION_FAILED` (Zod issues in `details`), `INVALID_REQUEST`, `INVALID_CURSOR` |
 | 404 | A resource, or a referenced resource, does not exist | `ROUTE_NOT_FOUND`, `<ENTITY>_NOT_FOUND` (e.g. `ACCOUNT_NOT_FOUND`) |
-| 409 | The request conflicts with the current state | e.g. `ACCOUNT_IN_USE`, `ACCOUNT_ARCHIVED`, `CATEGORY_HAS_CHILDREN`, `CATEGORY_HAS_ACTIVE_CHILDREN`, `CATEGORY_PARENT_ARCHIVED` |
+| 409 | The request conflicts with the current state | e.g. `ACCOUNT_IN_USE`, `ACCOUNT_ARCHIVED`, `CATEGORY_IN_USE`, `CATEGORY_ARCHIVED`, `CATEGORY_HAS_CHILDREN`, `CATEGORY_HAS_ACTIVE_CHILDREN`, `CATEGORY_PARENT_ARCHIVED`, `TRANSACTION_VOIDED`, `TRANSACTION_TYPE_IMMUTABLE` |
 | 422 | A financial rule was violated (`DomainError`) | The core's code, e.g. `UNBALANCED_TRANSACTION` |
 | 500 | Anything unexpected | `INTERNAL_ERROR`, generic message |
 
