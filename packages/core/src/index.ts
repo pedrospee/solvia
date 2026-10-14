@@ -35,6 +35,7 @@ export {
   type CategoryNature,
   createCategory,
 } from "./ledger/category.ts";
+export { assertOneOpeningBalancePerAccount } from "./ledger/opening-balance.ts";
 export { calculateOverdraft, type Overdraft } from "./ledger/overdraft.ts";
 export {
   type Posting,

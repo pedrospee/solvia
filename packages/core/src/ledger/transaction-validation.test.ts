@@ -228,6 +228,39 @@ describe("transaction types", () => {
     );
   });
 
+  it("rejects an opening balance that is not exactly one account and the opening-balance equity", () => {
+    const equity = (amount: ReturnType<typeof eur>): Posting => ({
+      target: { kind: "SYSTEM", role: "OPENING_BALANCE_EQUITY" },
+      amount,
+    });
+    const wisePosting = (amount: ReturnType<typeof eur>): Posting => ({
+      target: { kind: "ACCOUNT", accountId: demoWiseEur.id },
+      amount,
+    });
+    const notOneAndOne = [
+      // an income category instead of the equity posting
+      [
+        bankPosting(eur("10.00")),
+        { target: { kind: "CATEGORY", categoryId: salaryCategory.id }, amount: eur("-10.00") },
+      ],
+      // two accounts
+      [bankPosting(eur("10.00")), wisePosting(eur("5.00")), equity(eur("-15.00"))],
+      // two equity postings
+      [bankPosting(eur("10.00")), equity(eur("-5.00")), equity(eur("-5.00"))],
+    ] satisfies Posting[][];
+
+    for (const postings of notOneAndOne) {
+      expect(() =>
+        assertValidTransaction(transactionWith(postings, { type: "OPENING_BALANCE" }), references),
+      ).toThrowError(
+        expect.objectContaining({
+          code: "INVALID_TRANSACTION",
+          message: expect.stringMatching(/exactly one account and one opening-balance posting/),
+        }),
+      );
+    }
+  });
+
   it("rejects non-positive amounts in user operations", () => {
     expect(() =>
       createTransferTransaction({
@@ -239,6 +272,77 @@ describe("transaction types", () => {
         amount: negateMoney(eur("10.00")),
       }),
     ).toThrowError(expect.objectContaining({ code: "INVALID_AMOUNT" }));
+  });
+});
+
+describe("posting shape: exactly one target, integer minor units, a supported currency", () => {
+  /** Builds a posting the type system would not allow, as hand-built or deserialised data could. */
+  const raw = (posting: unknown) => posting as Posting;
+
+  it("rejects a posting without a target", () => {
+    expectRejection(
+      transactionWith([foodPosting(eur("1")), raw({ amount: eur("-1") })]),
+      "INVALID_TRANSACTION",
+    );
+  });
+
+  it("rejects a target that names more than one destination", () => {
+    for (const target of [
+      { kind: "ACCOUNT", accountId: demoBankEur.id, categoryId: foodCategory.id },
+      { kind: "CATEGORY", categoryId: foodCategory.id, role: "EXCHANGE_CLEARING" },
+      { kind: "SYSTEM", role: "EXCHANGE_CLEARING", accountId: demoBankEur.id },
+    ]) {
+      expectRejection(
+        transactionWith([foodPosting(eur("1")), raw({ target, amount: eur("-1") })]),
+        "INVALID_TRANSACTION",
+      );
+    }
+  });
+
+  it("rejects an unknown target kind and an unknown system role", () => {
+    expectRejection(
+      transactionWith([
+        foodPosting(eur("1")),
+        raw({ target: { kind: "GOAL", goalId: "g" }, amount: eur("-1") }),
+      ]),
+      "INVALID_TRANSACTION",
+    );
+    expectRejection(
+      transactionWith([
+        foodPosting(eur("1")),
+        raw({ target: { kind: "SYSTEM", role: "SUSPENSE" }, amount: eur("-1") }),
+      ]),
+      "INVALID_TRANSACTION",
+    );
+  });
+
+  it("rejects an unsupported currency", () => {
+    expectRejection(
+      transactionWith([
+        raw({
+          target: { kind: "CATEGORY", categoryId: foodCategory.id },
+          amount: { amountMinor: 100n, currency: "USD" },
+        }),
+        raw({
+          target: { kind: "SYSTEM", role: "EXCHANGE_CLEARING" },
+          amount: { amountMinor: -100n, currency: "USD" },
+        }),
+      ]),
+      "INVALID_TRANSACTION",
+    );
+  });
+
+  it("rejects an amount that is not bigint minor units (BR-10)", () => {
+    expectRejection(
+      transactionWith([
+        raw({
+          target: { kind: "CATEGORY", categoryId: foodCategory.id },
+          amount: { amountMinor: 10.5, currency: "EUR" },
+        }),
+        bankPosting(eur("-10.50")),
+      ]),
+      "INVALID_AMOUNT",
+    );
   });
 });
 
