@@ -1,9 +1,15 @@
 import { DomainError } from "../domain-error.ts";
-import type { Currency } from "../money/currency.ts";
-import { formatMoney, type Money, sumMoney } from "../money/money.ts";
+import {
+  CANONICAL_EXCHANGE_RATE_PAIR,
+  calculateExecutedRate,
+  createExchangeRate,
+  type ExchangeRate,
+} from "../exchange/exchange-rate.ts";
+import { CURRENCIES, type Currency } from "../money/currency.ts";
+import { createMoney, formatMoney, type Money, sumMoney } from "../money/money.ts";
 import { type Account, getAccountNature } from "./account.ts";
 import type { Category } from "./category.ts";
-import type { SystemPostingRole, Transaction, TransactionType } from "./transaction.ts";
+import type { Posting, SystemPostingRole, Transaction, TransactionType } from "./transaction.ts";
 
 /** The accounts and categories a transaction may reference. */
 export type LedgerReferences = Readonly<{
@@ -18,6 +24,12 @@ type ResolvedPosting =
 
 const MINIMUM_POSTINGS = 2;
 const MAXIMUM_CURRENCIES = 2;
+const SYSTEM_POSTING_ROLES: readonly SystemPostingRole[] = [
+  "OPENING_BALANCE_EQUITY",
+  "EXCHANGE_CLEARING",
+];
+/** BR-84: the only types that may involve two currencies. */
+const TWO_CURRENCY_TYPES: readonly TransactionType[] = ["CONVERSION", "EXPENSE"];
 
 /**
  * Rejects any transaction that would break the ledger. Throws a DomainError
@@ -50,7 +62,9 @@ function resolvePostings(
     throw invalid(transaction, `needs at least ${MINIMUM_POSTINGS} postings.`);
   }
 
-  return transaction.postings.map(({ target, amount }): ResolvedPosting => {
+  return transaction.postings.map((posting): ResolvedPosting => {
+    assertPostingShape(transaction, posting);
+    const { target, amount } = posting;
     if (amount.amountMinor === 0n) {
       throw invalid(transaction, "postings must not have a zero amount.");
     }
@@ -81,6 +95,42 @@ function resolvePostings(
   });
 }
 
+/**
+ * Rejects postings whose runtime shape the type system would not allow: amounts
+ * that are not bigint minor units in a supported currency, and targets that are
+ * missing, unknown, or name more than one destination.
+ */
+function assertPostingShape(transaction: Transaction, posting: Posting): void {
+  const { amount } = posting;
+  if (typeof amount?.amountMinor !== "bigint") {
+    throw new DomainError(
+      "INVALID_AMOUNT",
+      `Transaction ${transaction.id}: posting amounts must be integer minor units (bigint).`,
+    );
+  }
+  if (!(CURRENCIES as readonly string[]).includes(amount.currency)) {
+    throw invalid(transaction, `unsupported currency "${String(amount.currency)}".`);
+  }
+
+  const target: Record<string, unknown> | undefined = posting.target;
+  const fields = target === undefined || target === null ? [] : Object.keys(target).sort();
+  const expectedFields: Record<string, string> = {
+    ACCOUNT: "accountId,kind",
+    CATEGORY: "categoryId,kind",
+    SYSTEM: "kind,role",
+  };
+  const kind = target?.kind;
+  if (typeof kind !== "string" || expectedFields[kind] !== fields.join(",")) {
+    throw invalid(
+      transaction,
+      "every posting has exactly one target: an account, a category or a system role.",
+    );
+  }
+  if (kind === "SYSTEM" && !SYSTEM_POSTING_ROLES.includes(target?.role as SystemPostingRole)) {
+    throw invalid(transaction, `unknown system role "${String(target?.role)}".`);
+  }
+}
+
 function assertBalancedPerCurrency(transaction: Transaction, postings: ResolvedPosting[]): void {
   for (const currency of currenciesOf(postings)) {
     const amounts = postings.filter((p) => p.amount.currency === currency).map((p) => p.amount);
@@ -95,7 +145,13 @@ function assertBalancedPerCurrency(transaction: Transaction, postings: ResolvedP
   }
 }
 
-/** Single-currency: no exchange at all. Two currencies: a rate and a clearing leg in each currency. */
+/**
+ * Single-currency: no exchange at all. Two currencies (BR-84): only a conversion
+ * or a foreign-charge expense, whose exchange clearing postings net to non-zero
+ * amounts of opposite signs in EUR and BRL, and whose rate is exactly the
+ * executed rate derived from those nets. The rate is re-derived, never checked
+ * by converting a leg: a rate rounded from the legs can miss them by cents.
+ */
 function assertCurrencyExchangeRules(transaction: Transaction, postings: ResolvedPosting[]): void {
   const currencies = currenciesOf(postings);
   const clearingPostings = postings.filter(
@@ -113,21 +169,71 @@ function assertCurrencyExchangeRules(transaction: Transaction, postings: Resolve
     return;
   }
 
-  const rate = transaction.exchangeRate;
-  const rateCoversCurrencies =
-    rate !== undefined &&
-    currencies.includes(rate.baseCurrency) &&
-    currencies.includes(rate.quoteCurrency);
-  if (!rateCoversCurrencies) {
-    throw invalid(transaction, `needs the ${currencies.join("/")} exchange rate that was used.`);
+  if (!TWO_CURRENCY_TYPES.includes(transaction.type)) {
+    throw invalid(
+      transaction,
+      `a ${transaction.type} transaction involves one currency; only a conversion or a foreign-charge expense involves two.`,
+    );
   }
 
-  const everyCurrencyIsCleared = currencies.every((currency) =>
-    clearingPostings.some((p) => p.amount.currency === currency),
-  );
-  if (!everyCurrencyIsCleared) {
-    throw invalid(transaction, "needs an exchange clearing posting in each currency.");
+  const { baseCurrency, quoteCurrency } = CANONICAL_EXCHANGE_RATE_PAIR;
+  const netOf = (currency: Currency) =>
+    sumMoney(
+      clearingPostings.filter((p) => p.amount.currency === currency).map((p) => p.amount),
+      currency,
+    ).amountMinor;
+  const netBase = netOf(baseCurrency);
+  const netQuote = netOf(quoteCurrency);
+  if (netBase === 0n || netQuote === 0n) {
+    throw invalid(
+      transaction,
+      `the exchange clearing postings must not net to zero in ${baseCurrency} or ${quoteCurrency}.`,
+    );
   }
+  if (netBase > 0n === netQuote > 0n) {
+    throw invalid(
+      transaction,
+      "the exchange clearing postings must move in opposite directions in the two currencies.",
+    );
+  }
+
+  const stored = transaction.exchangeRate;
+  if (!stored) {
+    throw invalid(
+      transaction,
+      `needs the ${baseCurrency}/${quoteCurrency} rate it was executed at.`,
+    );
+  }
+  const actual = createExchangeRate(stored);
+  const expected = calculateExecutedRate(
+    createMoney(absolute(netBase), baseCurrency),
+    createMoney(absolute(netQuote), quoteCurrency),
+    { effectiveDate: transaction.date, recordedAt: stored.recordedAt },
+  );
+  if (!isSameRate(actual, expected)) {
+    throw invalid(
+      transaction,
+      `the exchange rate must be the executed rate of its clearing postings, ${describeRate(expected)}; got ${describeRate(actual)}.`,
+    );
+  }
+}
+
+function isSameRate(left: ExchangeRate, right: ExchangeRate): boolean {
+  return (
+    left.baseCurrency === right.baseCurrency &&
+    left.quoteCurrency === right.quoteCurrency &&
+    left.rate === right.rate &&
+    left.source === right.source &&
+    left.effectiveDate === right.effectiveDate
+  );
+}
+
+function describeRate({ baseCurrency, quoteCurrency, rate, source, effectiveDate }: ExchangeRate) {
+  return `${baseCurrency}/${quoteCurrency} ${rate} (${source}, ${effectiveDate})`;
+}
+
+function absolute(value: bigint): bigint {
+  return value < 0n ? -value : value;
 }
 
 /** Expense categories only increase (positive) and income categories only increase (negative). */
