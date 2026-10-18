@@ -16,7 +16,7 @@
     "db:migrate": "node --env-file-if-exists=../.env src/scripts/db-migrate.ts"
   },
   "dependencies": {
-    "@hono/node-server": "2.1.4",
+    "@hono/node-server": "2.1.5",
     "@solvia/contracts": "*",
     "@solvia/core": "*",
     "better-sqlite3": "13.0.3",
