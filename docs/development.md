@@ -66,6 +66,13 @@ SQLite through Drizzle ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.
 - **Changing the schema:** edit `backend/src/infrastructure/database/schema/`, run
   `npm run db:generate`, commit the generated migration, then run `npm run db:migrate`.
   Committed migrations are never edited. CI fails when the schema and the migrations differ.
+- **Foreign keys during migrations** ([ADR-0004](adr/0004-ledger-persistence.md#13-migration-strategy), L6):
+  the runner turns foreign keys off before the transaction, applies every pending migration, and
+  runs `PRAGMA foreign_key_check` before committing. Any violation rolls everything back with a
+  `ForeignKeyViolationError`; foreign keys are always turned back on.
+- **Rebuilds:** read the generated SQL. If it contains `__new_` or `DROP TABLE`, it rebuilds a
+  table: say so in the commit, and add a test that migrates a database with representative data
+  and checks every row is kept, `foreign_key_check` is empty and foreign keys are on afterwards.
 - Integer columns use `bigintInteger` (never Drizzle's `integer()`), so money stays `bigint`.
 
 ## Conventions

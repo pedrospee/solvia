@@ -74,7 +74,9 @@ domain rule and the core remains the definition of a balance.
 - `npm run db:migrate` is the only operation that changes the schema. The server and the other
   scripts refuse to run while migrations are pending.
 - Pending migrations are detected with the same rule as Drizzle's migrator (generated after the
-  last applied one). Drizzle applies all pending migrations inside one SQLite transaction.
+  last applied one). All pending migrations are applied inside one SQLite transaction, as
+  Drizzle's migrator does, with foreign keys turned off around it and checked before commit
+  ([ADR-0004](0004-ledger-persistence.md), L6).
 - CI runs `db:generate` and fails if it changes the migrations folder: `drizzle-kit check` only
   validates migration files among themselves and does not detect schema drift.
 
