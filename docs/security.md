@@ -37,6 +37,17 @@ real database files, backups or exports.
 | Weekly dependency updates                                                                                                                     | `.github/dependabot.yml`                           |
 | GitHub secret scanning + push protection                                                                                                      | Enable when the remote repository is created       |
 
+## Accepted dependency risks
+
+Known advisories that are not fixed yet, with the reason and the condition that ends the
+acceptance. Reviewed when Dependabot proposes a related update.
+
+| Advisory                                                                                                                                      | Path                                                                                   | Why it is accepted                                                                                                                                                                                                                                                       | Resolved by                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99) (moderate): the esbuild dev server answers requests from any website | `drizzle-kit` → `@esbuild-kit/esm-loader` → `@esbuild-kit/core-utils` → `esbuild` 0.18 | Development only: `drizzle-kit` runs in `npm run db:generate` and in CI, never in the server. It bundles the schema with esbuild and never starts the vulnerable dev server. `npm audit fix --force` would downgrade `drizzle-kit` to 0.18, which breaks the migrations. | `drizzle-kit` 1.0 stable, which has no `@esbuild-kit` dependency, upgraded together with `drizzle-orm` 1.0 in its own pull request, after slice 5 |
+
+Accepted on 2026-10-25.
+
 ## Backups
 
 - ✅ Automatic, verified backup before migrating an existing database (`npm run db:migrate`).
