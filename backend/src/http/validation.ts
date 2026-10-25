@@ -11,16 +11,24 @@ type Validated<Target extends keyof ValidationTargets, Schema extends z.ZodType>
   out: { [K in Target]: z.output<Schema> };
 };
 
+// The media types Hono's validator reads as JSON: application/json, application/*+json, with parameters.
+const JSON_CONTENT_TYPE = /^application\/([a-z-.]+\+)?json(;\s*[a-zA-Z0-9-]+=([^;]+))*$/i;
+
 /**
  * Validates one part of the request (json, query, param…) against a
  * @solvia/contracts schema, using Hono's built-in validator (ADR-0003).
  * A mismatch is a 400 `VALIDATION_FAILED` with the Zod issues in `details`.
+ * A json body without a JSON Content-Type is a 400 `INVALID_REQUEST`: Hono would
+ * read it as {}, which an all-optional PATCH schema accepts as "change nothing".
  */
 export function validate<Target extends keyof ValidationTargets, Schema extends z.ZodType>(
   target: Target,
   schema: Schema,
 ) {
-  const middleware = validator(target, (value) => {
+  const middleware = validator(target, (value, c) => {
+    if (target === "json" && !JSON_CONTENT_TYPE.test(c.req.header("Content-Type") ?? "")) {
+      throw new ApiError(400, "INVALID_REQUEST", "The request body must be JSON.");
+    }
     const result = schema.safeParse(value);
     if (!result.success) {
       throw new ApiError(400, "VALIDATION_FAILED", "The request does not match the API contract.", {

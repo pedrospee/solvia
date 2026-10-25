@@ -442,7 +442,8 @@ _Approved direction (L7-E)._
 - The request speaks in operations, never in postings ("Users never see debit/credit"); responses
   may include postings for reading.
 - The existing `PATCH` Content-Type defect still has to be fixed before the existing `PATCH`
-  endpoints are relied upon; it is outside this ADR.
+  endpoints are relied upon; it is outside this ADR. _Fixed on 2026-10-25, before slice 5: a JSON
+  body without a JSON `Content-Type` is a 400 `INVALID_REQUEST` (ADR-0003)._
 
 ### 10. Opening balances
 

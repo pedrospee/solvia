@@ -22,6 +22,10 @@ financial core.
 - Routes validate input with `validate(target, schema)` (`backend/src/http/validation.ts`): Hono's
   built-in validator running a `@solvia/contracts` schema, so the schema's input type reaches
   `AppType` and a mismatch becomes a 400 `VALIDATION_FAILED`. No extra validator package is used.
+- A JSON body needs a JSON `Content-Type` (`application/json`, with or without parameters). Without
+  one, `validate("json", …)` answers 400 `INVALID_REQUEST`, the same as a malformed body. Hono's
+  validator would otherwise read the body as `{}`, which an all-optional `PATCH` schema accepts as
+  a change of nothing.
 
 ### JSON representation
 

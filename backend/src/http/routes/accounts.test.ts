@@ -147,6 +147,21 @@ describe("PATCH /api/accounts/:id", () => {
       currency: "EUR",
     });
   });
+
+  it("rejects a body without a JSON Content-Type instead of ignoring it", async () => {
+    const { id } = await createAccount();
+
+    const response = await app.request(`/api/accounts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: "Renamed" }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: { code: "INVALID_REQUEST" } });
+    expect(await (await app.request(`/api/accounts/${id}`)).json()).toMatchObject({
+      name: "Demo Bank",
+    });
+  });
 });
 
 describe("archiving", () => {

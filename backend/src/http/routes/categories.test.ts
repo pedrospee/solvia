@@ -121,6 +121,20 @@ describe("PATCH /api/categories/:id", () => {
     expect([response.status, await errorCode(response)]).toEqual([400, "VALIDATION_FAILED"]);
   });
 
+  it("rejects a body without a JSON Content-Type instead of ignoring it", async () => {
+    const food = await create({ name: "Food", nature: "EXPENSE" });
+
+    const response = await app.request(`/api/categories/${food.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: "Renamed" }),
+    });
+
+    expect([response.status, await errorCode(response)]).toEqual([400, "INVALID_REQUEST"]);
+    expect(await (await app.request(`/api/categories/${food.id}`)).json()).toMatchObject({
+      name: "Food",
+    });
+  });
+
   it("rejects making a parent a child with 422 INVALID_CATEGORY", async () => {
     const food = await create({ name: "Food", nature: "EXPENSE" });
     await create({ name: "Groceries", nature: "EXPENSE", parentId: food.id });
