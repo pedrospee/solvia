@@ -1,12 +1,12 @@
-import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { loadEnvironment } from "../infrastructure/config/environment.ts";
 import { openSqlite } from "../infrastructure/database/client.ts";
 import { migrateDatabase } from "../infrastructure/database/migrations.ts";
+import { ensurePrivateDirectory } from "../infrastructure/files/private-files.ts";
 
 // npm run db:migrate — the only operation that changes the database schema.
 const environment = loadEnvironment();
-mkdirSync(dirname(environment.DATABASE_PATH), { recursive: true });
+ensurePrivateDirectory(dirname(environment.DATABASE_PATH));
 const sqlite = openSqlite(environment.DATABASE_PATH);
 
 try {

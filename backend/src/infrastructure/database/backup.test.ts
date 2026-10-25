@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -43,6 +43,20 @@ describe("backupDatabase", () => {
     backupDatabase(sqlite, backupDir, "manual", now);
 
     expect(() => backupDatabase(sqlite, backupDir, "manual", now)).toThrow(/already exists/);
+    sqlite.close();
+  });
+
+  it("keeps the backup directory and every backup private (700 and 600)", () => {
+    const sqlite = openSqlite(join(workDir, "solvia.db"));
+    sqlite.exec("CREATE TABLE notes (id TEXT PRIMARY KEY)");
+    const backupDir = join(workDir, "backups");
+    mkdirSync(backupDir);
+    chmodSync(backupDir, 0o755);
+
+    const backupPath = backupDatabase(sqlite, backupDir, "manual");
+
+    expect(statSync(backupDir).mode & 0o777).toBe(0o700);
+    expect(statSync(backupPath).mode & 0o777).toBe(0o600);
     sqlite.close();
   });
 });

@@ -41,16 +41,16 @@ Spreadsheets become hard to maintain as financial complexity grows. I wanted a s
 
 ## Project status
 
-Early development. The financial core exists; the backend (SQLite persistence and HTTP API) is being built in Phase 2B, in slices (see [architecture.md](docs/architecture.md#phase-2b-slices)). There is no user interface yet.
+Early development. The financial core and the backend (SQLite persistence, HTTP API, backup, restore and export) exist; Phase 2B is complete (see [architecture.md](docs/architecture.md#phase-2b-slices)). There is no user interface yet: it comes in Phase 2C.
 
-| Phase | Scope                                                                                                                      | Status      |
-| ----- | -------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| 0     | Foundation: TypeScript, Vitest, Biome, Git hooks, documentation                                                            | ✅ Done     |
-| 1     | Financial core: money, exchange rates, double-entry ledger                                                                 | ✅ Done     |
-| 2A    | Monorepo (npm workspaces), CI, Dependabot                                                                                  | ✅ Done     |
-| 2B    | Backend: SQLite persistence, HTTP API, accounts, categories, manual exchange rates, transactions, backup                   | In progress |
-| 2C    | Minimal UI (React + Vite)                                                                                                  | Next        |
-| 3–12  | Debts, credit cards, planning, payoff simulator, goals, analytics, dashboard, investments, integrations, advanced security | Planned     |
+| Phase | Scope                                                                                                                      | Status  |
+| ----- | -------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 0     | Foundation: TypeScript, Vitest, Biome, Git hooks, documentation                                                            | ✅ Done |
+| 1     | Financial core: money, exchange rates, double-entry ledger                                                                 | ✅ Done |
+| 2A    | Monorepo (npm workspaces), CI, Dependabot                                                                                  | ✅ Done |
+| 2B    | Backend: SQLite persistence, HTTP API, accounts, categories, manual exchange rates, transactions, backup                   | ✅ Done |
+| 2C    | Minimal UI (React + Vite)                                                                                                  | Next    |
+| 3–12  | Debts, credit cards, planning, payoff simulator, goals, analytics, dashboard, investments, integrations, advanced security | Planned |
 
 The full roadmap and rules are in [docs/](docs/).
 
@@ -74,6 +74,7 @@ npm install
 npm run check        # typecheck + lint + tests, every workspace
 cp .env.example .env # set DATABASE_PATH and BACKUP_DIR (outside the repository)
 npm run db:migrate   # create or update the database
+npm run db:backup    # a verified backup; see docs/development.md for restore and export
 npm run dev          # API on http://127.0.0.1:3000, restarting on change
 ```
 

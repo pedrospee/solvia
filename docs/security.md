@@ -34,6 +34,10 @@ can try to reach the API, so the server checks every request (`backend/src/http/
 - Real data is entered only after persistence and backup exist (Phase 2).
 - The database file is not encrypted by the application. Disk encryption (FileVault on
   macOS) must be enabled. SQLCipher may be evaluated in Phase 12.
+- **Only the owner can read the data.** The database (with its WAL files), backups and exports are
+  written as 600, in directories set to 700, whatever the process umask. Existing files and
+  directories are tightened when the server opens the database or a script writes there
+  (`backend/src/infrastructure/files/private-files.ts`).
 
 ## Never in the code or in Git
 
@@ -42,18 +46,19 @@ real database files, backups or exports.
 
 ## Controls
 
-| Control                                                                                                                                       | Where                                              |
-| --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `.gitignore` blocks `.env*` (except `.env.example`), databases, `data/`, `personal-data/`, `financial-data/`, `backups/`, `exports/`, `logs/` | `.gitignore`                                       |
-| Placeholder-only environment template                                                                                                         | `.env.example`                                     |
-| Environment validated at startup; the app refuses to start on invalid config                                                                  | `backend/src/infrastructure/config/environment.ts` |
-| API errors never expose stack traces, SQL, file paths or internal details (500 is generic and logged)                                         | `backend/src/http/error-handler.ts`                |
-| Only the local server's `Host`; changes only from its `Origin` (DNS rebinding, CSRF)                                                          | `backend/src/http/local-request-guard.ts`          |
-| Gitleaks scans staged changes before every commit; the commit is blocked if Gitleaks is missing                                               | `.githooks/pre-commit`, enabled by `npm install`   |
-| Full-history scan on demand                                                                                                                   | `npm run secrets:scan`                             |
-| Gitleaks scan on every push and pull request to `main`                                                                                        | `.github/workflows/ci.yml`                         |
-| Weekly dependency updates                                                                                                                     | `.github/dependabot.yml`                           |
-| GitHub secret scanning + push protection                                                                                                      | Enable when the remote repository is created       |
+| Control                                                                                                                                       | Where                                               |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `.gitignore` blocks `.env*` (except `.env.example`), databases, `data/`, `personal-data/`, `financial-data/`, `backups/`, `exports/`, `logs/` | `.gitignore`                                        |
+| Placeholder-only environment template                                                                                                         | `.env.example`                                      |
+| Environment validated at startup; the app refuses to start on invalid config                                                                  | `backend/src/infrastructure/config/environment.ts`  |
+| API errors never expose stack traces, SQL, file paths or internal details (500 is generic and logged)                                         | `backend/src/http/error-handler.ts`                 |
+| Only the local server's `Host`; changes only from its `Origin` (DNS rebinding, CSRF)                                                          | `backend/src/http/local-request-guard.ts`           |
+| Gitleaks scans staged changes before every commit; the commit is blocked if Gitleaks is missing                                               | `.githooks/pre-commit`, enabled by `npm install`    |
+| Full-history scan on demand                                                                                                                   | `npm run secrets:scan`                              |
+| Gitleaks scan on every push and pull request to `main`                                                                                        | `.github/workflows/ci.yml`                          |
+| Database, backups and exports private to the owner (600 files, 700 directories)                                                               | `backend/src/infrastructure/files/private-files.ts` |
+| Weekly dependency updates                                                                                                                     | `.github/dependabot.yml`                            |
+| GitHub secret scanning + push protection                                                                                                      | Enable when the remote repository is created        |
 
 ## Accepted dependency risks
 
@@ -69,6 +74,9 @@ Accepted on 2026-10-25.
 ## Backups
 
 - ✅ Automatic, verified backup before migrating an existing database (`npm run db:migrate`).
-- Manual backup, restore and export: Phase 2B.
+- ✅ Manual backup (`npm run db:backup`), restore with a verified `pre-restore` backup
+  (`npm run db:restore -- <file>`) and a complete JSON export (`npm run data:export`).
+- Backups are not encrypted by the application, like the database: keep them on an encrypted disk.
+  An export is readable JSON with every amount and description; treat it like the database.
 
 Backups are stored outside the repository, in `BACKUP_DIR`.

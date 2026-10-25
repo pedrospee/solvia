@@ -1,6 +1,6 @@
-import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
+import { ensurePrivateDirectory, makePrivateFile } from "../files/private-files.ts";
 import type { SqliteConnection } from "./client.ts";
 
 export class BackupVerificationError extends Error {
@@ -14,6 +14,7 @@ export class BackupVerificationError extends Error {
  * Writes a consistent copy of the open database into `backupDir` and verifies it.
  * `VACUUM INTO` produces a transactionally consistent snapshot (including pages
  * still in the WAL) and refuses to overwrite an existing file.
+ * The directory is 700 and the backup 600 (docs/security.md).
  * Returns the path of the verified backup.
  */
 export function backupDatabase(
@@ -22,11 +23,12 @@ export function backupDatabase(
   reason: string,
   now: Date = new Date(),
 ): string {
-  mkdirSync(backupDir, { recursive: true });
+  ensurePrivateDirectory(backupDir);
   const timestamp = now.toISOString().replaceAll(":", "-").replace(".", "-");
   const backupPath = join(backupDir, `solvia-${timestamp}-${reason}.db`);
 
   sqlite.prepare("VACUUM INTO ?").run(backupPath);
+  makePrivateFile(backupPath);
   verifyBackup(sqlite, backupPath);
 
   return backupPath;
@@ -41,12 +43,17 @@ function verifyBackup(source: SqliteConnection, backupPath: string): void {
     if (integrity !== "ok") {
       throw new BackupVerificationError(`integrity check returned "${String(integrity)}".`);
     }
-    if (describeContents(backup) !== describeContents(source)) {
+    if (!hasSameContents(source, backup)) {
       throw new BackupVerificationError("the backup does not match the source database.");
     }
   } finally {
     backup.close();
   }
+}
+
+/** Same schema objects, and the same row count in every table. */
+export function hasSameContents(left: SqliteConnection, right: SqliteConnection): boolean {
+  return describeContents(left) === describeContents(right);
 }
 
 /** Every schema object plus the row count of every table, as one comparable string. */
