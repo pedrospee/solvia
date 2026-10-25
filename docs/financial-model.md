@@ -44,7 +44,7 @@ The foreign purchase keeps the expense in its original BRL and the debt in the E
 3. Postings sum to zero in each currency.
 4. One currency: no exchange data. Two currencies: the rate used plus a clearing posting in each currency.
 5. Expense categories only move positive, income categories only negative.
-6. Type rules: income only into assets; transfers only between two distinct asset accounts, no categories; card payments reduce a credit card from asset accounts; conversions involve two currencies, asset accounts only, fees as expense; the opening-balance posting only in opening balances.
+6. Type rules: income only into assets; transfers only between two distinct asset accounts, no categories; card payments only reduce credit cards and are paid from at least one asset account, never from another card (BR-44); conversions involve two currencies, asset accounts only, fees as expense; the opening-balance posting only in opening balances.
 
 ## Balances and summaries
 

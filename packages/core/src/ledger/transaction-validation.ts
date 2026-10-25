@@ -296,19 +296,26 @@ const TYPE_RULES: Readonly<Record<TransactionType, TypeRule>> = {
         : undefined,
     ]),
 
+  /** BR-44: card postings only reduce card debt; the money leaves own asset accounts. */
   CARD_PAYMENT: (postings) => {
     const accounts = accountPostings(postings);
-    const paysCard = accounts.some(
-      (p) => p.account.kind === "CREDIT_CARD" && p.amount.amountMinor > 0n,
-    );
+    const cards = accounts.filter((p) => p.account.kind === "CREDIT_CARD");
     const otherAccounts = accounts.filter((p) => p.account.kind !== "CREDIT_CARD");
     return firstViolation([
       withoutOpeningEquity(postings),
       postings.some((p) => p.kind === "CATEGORY") ? "a card payment has no category." : undefined,
-      paysCard ? undefined : "a card payment must reduce a credit card balance.",
+      cards.some((p) => p.amount.amountMinor > 0n)
+        ? undefined
+        : "a card payment must reduce a credit card balance.",
+      cards.every((p) => p.amount.amountMinor > 0n)
+        ? undefined
+        : "a card payment only reduces credit card balances; a card is never paid with another card.",
       otherAccounts.every((p) => getAccountNature(p.account.kind) === "ASSET")
         ? undefined
         : "a card payment is paid from asset accounts.",
+      otherAccounts.some((p) => p.amount.amountMinor < 0n)
+        ? undefined
+        : "a card payment is paid from at least one asset account.",
     ]);
   },
 
