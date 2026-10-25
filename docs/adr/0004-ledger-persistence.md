@@ -518,7 +518,8 @@ authors do not opt in.
   today (fact 4).
 
 **The migration runner turns foreign keys off around the transaction and checks them before
-committing.** `migrateDatabase` will:
+committing.** _Implemented on 2026-10-25 (`migrations.ts`, `migrations.test.ts`)._
+`migrateDatabase` will:
 1. write and verify the backup (unchanged);
 2. `PRAGMA foreign_keys = OFF`, **before** the transaction;
 3. `BEGIN`, apply every pending migration and record it in `__drizzle_migrations` exactly as
