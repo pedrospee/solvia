@@ -6,6 +6,9 @@ import {
   currencySchema,
   type ExchangeRateSourceJson,
   exchangeRateSourceSchema,
+  type SystemPostingRoleJson,
+  type TransactionTypeJson,
+  transactionTypeSchema,
 } from "@solvia/contracts";
 import {
   type AccountKind,
@@ -16,6 +19,9 @@ import {
   EXCHANGE_RATE_SOURCES,
   type ExchangeRateSource,
   LIABILITY_ACCOUNT_KINDS,
+  type SystemPostingRole,
+  TRANSACTION_TYPES,
+  type TransactionType,
 } from "@solvia/core";
 import { describe, expect, expectTypeOf, it } from "vitest";
 
@@ -36,6 +42,13 @@ describe("contracts stay consistent with the core", () => {
   it("category natures", () => {
     // The core has no runtime list of natures, so the type check is the guard.
     expectTypeOf<CategoryNatureJson>().toEqualTypeOf<CategoryNature>();
+  });
+
+  it("transaction types and system posting roles", () => {
+    expectTypeOf<TransactionTypeJson>().toEqualTypeOf<TransactionType>();
+    expect(transactionTypeSchema.options).toEqual(TRANSACTION_TYPES);
+    // The core has no runtime list of system roles, so the type check is the guard.
+    expectTypeOf<SystemPostingRoleJson>().toEqualTypeOf<SystemPostingRole>();
   });
 
   it("exchange rate sources", () => {

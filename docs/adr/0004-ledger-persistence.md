@@ -424,7 +424,8 @@ How the boundary is enforced:
 
 ### 9. API semantics
 
-_Approved direction (L7-E)._
+_Approved direction (L7-E). Implemented on 2026-10-25 (`routes/transactions.ts`,
+`@solvia/contracts` `transaction.ts`), completing slice 5._
 
 | Operation | Route                                                | Semantics                                                                                                 |
 | --------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |

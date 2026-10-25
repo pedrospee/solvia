@@ -98,6 +98,18 @@ same `archivedAt`, `createdAt` and `updatedAt` as accounts.
 - `nature` never changes after creation; `name` and `parentId` can (`null` moves to the top level).
   An update that changes nothing keeps `updatedAt`.
 
+## Transaction lifecycle (backend, not core)
+
+The rules of a transaction are the core's; its persistence, edits and voids are the backend's
+([ADR-0004](adr/0004-ledger-persistence.md)).
+- Transactions are recorded through `/api/transactions` as operations, never postings: `POST`
+  creates, `PUT /:id` replaces the whole operation, `POST /:id/void` voids. There is no `DELETE`.
+  An `EXPENSE` carries `chargedAmount` only when its amount is in another currency than the account.
+- `GET /api/accounts/:id/balance` returns the balance and overdraft derived from the effective
+  ledger.
+- A voided transaction keeps its postings but leaves the effective ledger, the only input of
+  balances and every other calculation (BR-24).
+
 ## Exchange rate lifecycle (backend, not core)
 
 The rules of a rate (BR-80, BR-82, BR-83) are the core's; its history is the backend's.

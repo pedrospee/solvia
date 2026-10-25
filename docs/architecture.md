@@ -148,7 +148,7 @@ Phase 2B is delivered in slices, each merged into `main` before the next one sta
 | 2     | Accounts, overdraft limit (BR-22)                                                    | ✅ Done |
 | 3     | Categories, two-level hierarchy (BR-70, BR-71)                                       | ✅ Done |
 | 4     | Manual exchange rates (BR-80 to BR-83)                                               | ✅ Done |
-| 5     | Transactions and postings; `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`; balances in the API  |         |
+| 5     | Transactions and postings; `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`; balances in the API  | ✅ Done |
 | 6     | Manual backup, restore and JSON export                                               |         |
 
 After the MVP (phases 0–3): **reconciliation**, then **CSV import** (preview, validation, column mapping, duplicate detection, confirmation, idempotent re-import).
