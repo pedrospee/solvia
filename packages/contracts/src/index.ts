@@ -2,9 +2,11 @@
 // It depends only on Zod, never on @solvia/core or the backend.
 
 export {
+  type AccountBalanceResponse,
   type AccountKindJson,
   type AccountListResponse,
   type AccountResponse,
+  accountBalanceResponseSchema,
   accountKindSchema,
   accountListResponseSchema,
   accountResponseSchema,
@@ -49,3 +51,18 @@ export {
   type MoneyJson,
   moneySchema,
 } from "./money.ts";
+export {
+  listTransactionsQuerySchema,
+  postingResponseSchema,
+  postingTargetSchema,
+  type SystemPostingRoleJson,
+  systemPostingRoleSchema,
+  type TransactionListResponse,
+  type TransactionOperationRequest,
+  type TransactionResponse,
+  type TransactionTypeJson,
+  transactionListResponseSchema,
+  transactionOperationSchema,
+  transactionResponseSchema,
+  transactionTypeSchema,
+} from "./transaction.ts";

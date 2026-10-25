@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { type Account, createAccount, type Money } from "@solvia/core";
+import {
+  type Account,
+  calculateAccountBalance,
+  calculateOverdraft,
+  createAccount,
+  type Money,
+  type Overdraft,
+} from "@solvia/core";
 import type { AppDatabase } from "../../infrastructure/database/client.ts";
 import { ConflictError, NotFoundError } from "../errors.ts";
 import { createTransactionRepository } from "../transactions/transaction-repository.ts";
@@ -12,6 +19,13 @@ export type AccountChanges = Readonly<{
   name?: string;
   institution?: string | null;
   overdraftLimit?: Money | null;
+}>;
+
+/** Derived from the effective ledger, never stored (BR-20, BR-22, BR-24). */
+export type AccountBalance = Readonly<{
+  accountId: string;
+  balance: Money;
+  overdraft: Overdraft | null;
 }>;
 
 export type AccountService = ReturnType<typeof createAccountService>;
@@ -49,6 +63,17 @@ export function createAccountService(
     },
 
     get: load,
+
+    /** Archived accounts too: their balance still counts in net worth. */
+    balance(id: string): AccountBalance {
+      const { account } = load(id);
+      const ledger = createTransactionRepository(db).loadEffectiveLedger();
+      return {
+        accountId: account.id,
+        balance: calculateAccountBalance(account, ledger),
+        overdraft: calculateOverdraft(account, ledger),
+      };
+    },
 
     create(input: NewAccount): AccountRecord {
       const account = createAccount({ ...input, id: newId() });

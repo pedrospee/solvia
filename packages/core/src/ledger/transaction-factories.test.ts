@@ -172,3 +172,22 @@ describe("the six transaction types, as the factories build them", () => {
     });
   });
 });
+
+describe("operation inputs the factories never ignore", () => {
+  it("rejects a charged amount on an expense in the account's own currency", () => {
+    expect(() =>
+      createExpenseTransaction({
+        ...details("t-same-currency-charge"),
+        paidFrom: demoBankEur,
+        category: foodCategory,
+        amount: eur("10.00"),
+        foreignCharge: { chargedAmount: eur("99.00"), recordedAt: demoRecordedAt },
+      }),
+    ).toThrowError(
+      expect.objectContaining({
+        code: "INVALID_TRANSACTION",
+        message: expect.stringMatching(/no foreign charge/),
+      }),
+    );
+  });
+});

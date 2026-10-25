@@ -68,6 +68,12 @@ export function createExpenseTransaction(
   assertPositive(amount, "expense amount");
 
   if (amount.currency === paidFrom.currency) {
+    if (foreignCharge) {
+      throw new DomainError(
+        "INVALID_TRANSACTION",
+        `A ${amount.currency} expense paid from a ${paidFrom.currency} account has no foreign charge; leave the charged amount out.`,
+      );
+    }
     return buildValidTransaction(
       details,
       "EXPENSE",

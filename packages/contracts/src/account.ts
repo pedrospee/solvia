@@ -71,3 +71,24 @@ export const accountListResponseSchema = z.strictObject({
 });
 
 export type AccountListResponse = z.infer<typeof accountListResponseSchema>;
+
+/**
+ * GET /api/accounts/:id/balance: derived from the effective ledger, never stored
+ * (BR-20, BR-24). `overdraft` is null for an account without an overdraft limit (BR-22).
+ */
+export const accountBalanceResponseSchema = z.strictObject({
+  accountId: z.string(),
+  /** As the user reads it: money held for assets (negative = overdraft), owed for liabilities. */
+  balance: moneySchema,
+  overdraft: z
+    .strictObject({
+      limit: moneySchema,
+      used: moneySchema,
+      remaining: moneySchema,
+      exceeded: moneySchema,
+      availableIncludingOverdraft: moneySchema,
+    })
+    .nullable(),
+});
+
+export type AccountBalanceResponse = z.infer<typeof accountBalanceResponseSchema>;

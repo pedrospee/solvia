@@ -5,7 +5,12 @@ import {
 } from "@solvia/contracts";
 import { Hono } from "hono";
 import type { AccountService } from "../../modules/accounts/account-service.ts";
-import { accountChangesFromJson, accountToJson, newAccountFromJson } from "../mappers/account.ts";
+import {
+  accountBalanceToJson,
+  accountChangesFromJson,
+  accountToJson,
+  newAccountFromJson,
+} from "../mappers/account.ts";
 import { validate } from "../validation.ts";
 
 export function accountRoutes(service: AccountService) {
@@ -19,6 +24,9 @@ export function accountRoutes(service: AccountService) {
       return c.json(accountToJson(record), 201);
     })
     .get("/:id", (c) => c.json(accountToJson(service.get(c.req.param("id"))), 200))
+    .get("/:id/balance", (c) =>
+      c.json(accountBalanceToJson(service.balance(c.req.param("id"))), 200),
+    )
     .patch("/:id", validate("json", updateAccountRequestSchema), (c) => {
       const changes = accountChangesFromJson(c.req.valid("json"));
       return c.json(accountToJson(service.update(c.req.param("id"), changes)), 200);

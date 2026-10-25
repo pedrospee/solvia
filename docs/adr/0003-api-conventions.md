@@ -87,6 +87,10 @@ are duplicated on purpose; a backend test fails at type level and at runtime if 
 
   `GET /api/transactions/:id` returns a voided transaction too. Lists leave voided transactions out
   unless `includeVoided=true`.
+- **Derived values are read-only sub-resources**, computed on every request and never stored:
+  `GET /api/accounts/:id/balance` returns `{ accountId, balance, overdraft }`, derived from the
+  effective ledger (BR-20, BR-22, BR-24). `overdraft` is `null` for an account without a limit. An
+  archived account still has a balance.
 - An append-only resource (e.g. manual exchange rates) has no `PATCH` or `DELETE` route; such a
   request is a 404 `ROUTE_NOT_FOUND`, and a correction is a new resource.
 
