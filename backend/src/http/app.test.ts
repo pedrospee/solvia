@@ -1,9 +1,10 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { createTestDatabase } from "../infrastructure/database/test-fixtures.ts";
 import { createApp } from "./app.ts";
+import { createTestApp } from "./test-fixtures.ts";
 
 const database = createTestDatabase();
-const app = createApp({ db: database.db });
+const app = createTestApp(database.db);
 
 afterAll(() => {
   database.sqlite.close();

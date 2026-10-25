@@ -8,6 +8,23 @@
 - If the application is ever exposed on a network, or becomes multi-user/SaaS,
   authentication and authorization become mandatory before that change ships.
 
+## Browsers on this machine
+
+Binding to `127.0.0.1` keeps other machines out, but not a browser on this one. Any site open in it
+can try to reach the API, so the server checks every request (`backend/src/http/local-request-guard.ts`):
+- **DNS rebinding.** A malicious site can make its own domain resolve to `127.0.0.1`, and the
+  browser then treats the API as that site, able to read and change data. Its requests still carry
+  the site's `Host`, so any `Host` other than `127.0.0.1:PORT` or `localhost:PORT` is a 403
+  `HOST_NOT_ALLOWED`, for every method and route.
+- **CSRF.** Some requests, such as a `POST` without a body (archive, void), reach a server without
+  a CORS preflight. A change (any method but `GET`, `HEAD` and `OPTIONS`) whose `Origin` is not the
+  server's own is a 403 `ORIGIN_NOT_ALLOWED`. Requests with a body already need JSON
+  (`Content-Type` check, ADR-0003), which a cross-site form cannot send.
+- **No CORS headers.** The API never sends `Access-Control-Allow-*`, so a page from another origin
+  cannot read any answer.
+- **The UI (Phase 2C)** must reach the API from the server's own origin, for example through the
+  Vite dev server's proxy, or its origin must be added deliberately, with a test.
+
 ## Data
 
 - Only fictitious data in the repository: seed data, mocks and test fixtures.
@@ -31,6 +48,7 @@ real database files, backups or exports.
 | Placeholder-only environment template                                                                                                         | `.env.example`                                     |
 | Environment validated at startup; the app refuses to start on invalid config                                                                  | `backend/src/infrastructure/config/environment.ts` |
 | API errors never expose stack traces, SQL, file paths or internal details (500 is generic and logged)                                         | `backend/src/http/error-handler.ts`                |
+| Only the local server's `Host`; changes only from its `Origin` (DNS rebinding, CSRF)                                                          | `backend/src/http/local-request-guard.ts`          |
 | Gitleaks scans staged changes before every commit; the commit is blocked if Gitleaks is missing                                               | `.githooks/pre-commit`, enabled by `npm install`   |
 | Full-history scan on demand                                                                                                                   | `npm run secrets:scan`                             |
 | Gitleaks scan on every push and pull request to `main`                                                                                        | `.github/workflows/ci.yml`                         |
