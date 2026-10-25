@@ -71,12 +71,13 @@ because of the hierarchy (`category.test.ts`).
 
 ## Credit cards
 
-| ID    | Rule                                                                                                                                                                  | Status                           |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| BR-40 | A card purchase creates a liability; the bank balance is unchanged.                                                                                                   | ✅ `financial-scenarios.test.ts` |
-| BR-41 | Installments: the budget gets the installment amount each month; the committed limit and the liability equal the total still unpaid; the schedule controls due dates. | Phase 4                          |
-| BR-42 | A purchase belongs to the statement whose period contains its date; a purchase on the closing day belongs to the statement being closed. Configurable per card later. | Phase 4                          |
-| BR-43 | Financial periods use local dates (`YYYY-MM-DD`), never time or time zone.                                                                                            | ✅ `local-date.test.ts`          |
+| ID    | Rule                                                                                                                                                                                                                                                               | Status                              |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
+| BR-40 | A card purchase creates a liability; the bank balance is unchanged.                                                                                                                                                                                                | ✅ `financial-scenarios.test.ts`    |
+| BR-41 | Installments: the budget gets the installment amount each month; the committed limit and the liability equal the total still unpaid; the schedule controls due dates.                                                                                              | Phase 4                             |
+| BR-42 | A purchase belongs to the statement whose period contains its date; a purchase on the closing day belongs to the statement being closed. Configurable per card later.                                                                                              | Phase 4                             |
+| BR-43 | Financial periods use local dates (`YYYY-MM-DD`), never time or time zone.                                                                                                                                                                                         | ✅ `local-date.test.ts`             |
+| BR-44 | A card payment only reduces card debt and is paid from own asset accounts: every credit card posting reduces that card's balance, and money leaves at least one asset account. A card is never paid with another card, which would move debt instead of paying it. | ✅ `transaction-validation.test.ts` |
 
 ## Goals
 

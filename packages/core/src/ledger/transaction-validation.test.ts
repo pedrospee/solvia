@@ -196,6 +196,84 @@ describe("transaction types", () => {
     ).toThrowError(expect.objectContaining({ code: "INVALID_TRANSACTION" }));
   });
 
+  describe("card payments (BR-44)", () => {
+    const otherCard = createAccount({
+      id: "demo-other-card",
+      name: "Other Card",
+      kind: "CREDIT_CARD",
+      currency: "EUR",
+    });
+    const accountPosting = (accountId: string, amount: ReturnType<typeof eur>): Posting => ({
+      target: { kind: "ACCOUNT", accountId },
+      amount,
+    });
+    const cardPayment = (postings: Posting[]) =>
+      transactionWith(postings, { type: "CARD_PAYMENT" });
+    const withOtherCard: LedgerReferences = {
+      ...references,
+      accounts: [...references.accounts, otherCard],
+    };
+
+    it("accepts a card paid from asset accounts", () => {
+      const valid = cardPayment([
+        accountPosting(demoCreditCard.id, eur("80.00")),
+        bankPosting(eur("-50.00")),
+        accountPosting(demoWiseEur.id, eur("-30.00")),
+      ]);
+
+      expect(() => assertValidTransaction(valid, references)).not.toThrow();
+    });
+
+    it("rejects a card paid with another card", () => {
+      const cardWithCard = cardPayment([
+        accountPosting(otherCard.id, eur("100.00")),
+        accountPosting(demoCreditCard.id, eur("-100.00")),
+      ]);
+
+      expect(() => assertValidTransaction(cardWithCard, withOtherCard)).toThrowError(
+        expect.objectContaining({
+          code: "INVALID_TRANSACTION",
+          message: expect.stringMatching(/never paid with another card/),
+        }),
+      );
+    });
+
+    it("rejects a card paid partly with another card", () => {
+      const partlyWithCard = cardPayment([
+        accountPosting(otherCard.id, eur("100.00")),
+        bankPosting(eur("-60.00")),
+        accountPosting(demoCreditCard.id, eur("-40.00")),
+      ]);
+
+      expect(() => assertValidTransaction(partlyWithCard, withOtherCard)).toThrowError(
+        expect.objectContaining({ code: "INVALID_TRANSACTION" }),
+      );
+    });
+
+    it("rejects a payment that cancels out on the same card", () => {
+      expectRejection(
+        cardPayment([
+          accountPosting(demoCreditCard.id, eur("100.00")),
+          accountPosting(demoCreditCard.id, eur("-100.00")),
+        ]),
+        "INVALID_TRANSACTION",
+      );
+    });
+
+    it("rejects a payment where no money leaves an asset account", () => {
+      expect(() =>
+        assertValidTransaction(
+          cardPayment([
+            accountPosting(demoCreditCard.id, eur("100.00")),
+            accountPosting(otherCard.id, eur("50.00")),
+            accountPosting(demoCreditCard.id, eur("-150.00")),
+          ]),
+          withOtherCard,
+        ),
+      ).toThrowError(expect.objectContaining({ code: "INVALID_TRANSACTION" }));
+    });
+  });
+
   it("rejects income received into a liability account", () => {
     expect(() =>
       createIncomeTransaction({
