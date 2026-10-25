@@ -5,13 +5,13 @@ Decisions approved on 2026-09-26.
 
 ## Three concerns, never mixed
 
-| Layer | Question | Examples |
-| --- | --- | --- |
-| **Ledger** | What actually happened? | Salary received, transfer, card purchase, debt payment |
-| **Planning** | What is expected to happen? | Expected salary, future installment, planned trip |
-| **Analytics** | What does it mean? | Net worth, cash flow, debt evolution, projections |
+| Layer         | Question                    | Examples                                               |
+| ------------- | --------------------------- | ------------------------------------------------------ |
+| **Ledger**    | What actually happened?     | Salary received, transfer, card purchase, debt payment |
+| **Planning**  | What is expected to happen? | Expected salary, future installment, planned trip      |
+| **Analytics** | What does it mean?          | Net worth, cash flow, debt evolution, projections      |
 
-A ledger transaction is always a fact. Planned items live in planning and are *matched* to real transactions when they happen.
+A ledger transaction is always a fact. Planned items live in planning and are _matched_ to real transactions when they happen.
 
 ## Layers
 
@@ -27,12 +27,12 @@ core / domain (pure rules)  ←  application (use cases)  ←  infrastructure (D
 
 Dependencies point inward only. The repository is an npm workspaces monorepo ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md)), and the workspaces make the layers visible:
 
-| Workspace | Package | Layers | Depends on |
-| --- | --- | --- | --- |
-| `packages/core` | `@solvia/core` | core | nothing (no runtime dependencies, no Node types) |
-| `packages/contracts` | `@solvia/contracts` | API JSON schemas | Zod only (no core, no Node types) |
-| `backend` | `@solvia/backend` | application, infrastructure, http | `@solvia/core`, `@solvia/contracts`, Hono, Drizzle, better-sqlite3, Zod |
-| `frontend` (Phase 2C) | — | web | `@solvia/contracts`; `AppType` as a type-only import, never backend runtime code |
+| Workspace             | Package             | Layers                            | Depends on                                                                       |
+| --------------------- | ------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `packages/core`       | `@solvia/core`      | core                              | nothing (no runtime dependencies, no Node types)                                 |
+| `packages/contracts`  | `@solvia/contracts` | API JSON schemas                  | Zod only (no core, no Node types)                                                |
+| `backend`             | `@solvia/backend`   | application, infrastructure, http | `@solvia/core`, `@solvia/contracts`, Hono, Drizzle, better-sqlite3, Zod          |
+| `frontend` (Phase 2C) | —                   | web                               | `@solvia/contracts`; `AppType` as a type-only import, never backend runtime code |
 
 Other workspaces import the core only as `@solvia/core` (its `src/index.ts`), never through deep paths.
 Persistence: [ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md). API conventions: [ADR-0003](adr/0003-api-conventions.md).
@@ -100,54 +100,54 @@ Later in Phase 2B: `backend/src/modules/transactions/` (slice 5). From Phase 2C:
 
 ## Stack
 
-| Area | Choice | Why |
-| --- | --- | --- |
-| Runtime | Node.js 24 LTS | Long-term support; runs TypeScript natively (type stripping) |
-| Language | TypeScript `strict` + `noUncheckedIndexedAccess` | Errors caught at compile time |
-| Money | `bigint` minor units, decimal strings for rates | Never floating point |
-| Validation | Zod | External input and configuration |
-| Tests / lint | Vitest / Biome | Fast, minimal configuration; one root config for every workspace |
-| Repository | npm workspaces | Explicit package boundaries without extra tools ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md)) |
-| CI | GitHub Actions, Dependabot | `npm run check` and Gitleaks on every push and pull request |
-| Database | SQLite + Drizzle + better-sqlite3 | Local file, ACID, typed, versioned migrations ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md)) |
-| API | Hono + `@solvia/contracts` (Zod) | Small, typed RPC client, shared schemas ([ADR-0003](adr/0003-api-conventions.md)) |
-| UI | React + Vite | Introduced with the minimal UI |
-| Secrets | `.env`, Gitleaks pre-commit, GitHub push protection | See [security.md](security.md) |
+| Area         | Choice                                              | Why                                                                                                         |
+| ------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Runtime      | Node.js 24 LTS                                      | Long-term support; runs TypeScript natively (type stripping)                                                |
+| Language     | TypeScript `strict` + `noUncheckedIndexedAccess`    | Errors caught at compile time                                                                               |
+| Money        | `bigint` minor units, decimal strings for rates     | Never floating point                                                                                        |
+| Validation   | Zod                                                 | External input and configuration                                                                            |
+| Tests / lint | Vitest / Biome                                      | Fast, minimal configuration; one root config for every workspace                                            |
+| Repository   | npm workspaces                                      | Explicit package boundaries without extra tools ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md))      |
+| CI           | GitHub Actions, Dependabot                          | `npm run check` and Gitleaks on every push and pull request                                                 |
+| Database     | SQLite + Drizzle + better-sqlite3                   | Local file, ACID, typed, versioned migrations ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md)) |
+| API          | Hono + `@solvia/contracts` (Zod)                    | Small, typed RPC client, shared schemas ([ADR-0003](adr/0003-api-conventions.md))                           |
+| UI           | React + Vite                                        | Introduced with the minimal UI                                                                              |
+| Secrets      | `.env`, Gitleaks pre-commit, GitHub push protection | See [security.md](security.md)                                                                              |
 
 No dependency is added without a documented reason.
 
 ## Roadmap
 
-| Phase | Scope | Status |
-| --- | --- | --- |
-| 0 | Foundation | ✅ Done |
-| 1 | Financial core: money, exchange rates, ledger | ✅ Done |
-| 2 | Persistence, accounts, transactions, manual rates, backup/export, minimal UI | In progress |
-| 2A | Monorepo with npm workspaces, CI | ✅ Done |
-| 2B | Backend skeleton: Hono, Drizzle, SQLite, shared contracts | In progress |
-| 2C | Frontend: React + Vite | |
-| 3 | Debt management | |
-| 4 | Credit cards: statements, installments | |
-| 5 | Planning and budget | |
-| 6 | Debt payoff simulator (avalanche / snowball) | |
-| 7 | Financial goals | |
-| 8 | Analytics, snapshots, projections | |
-| 9 | Dashboard | |
-| 10 | Investments | |
-| 11 | Automatic exchange rates, CSV/OFX import, Wise | |
-| 12 | Advanced security and audit | |
+| Phase | Scope                                                                        | Status      |
+| ----- | ---------------------------------------------------------------------------- | ----------- |
+| 0     | Foundation                                                                   | ✅ Done     |
+| 1     | Financial core: money, exchange rates, ledger                                | ✅ Done     |
+| 2     | Persistence, accounts, transactions, manual rates, backup/export, minimal UI | In progress |
+| 2A    | Monorepo with npm workspaces, CI                                             | ✅ Done     |
+| 2B    | Backend skeleton: Hono, Drizzle, SQLite, shared contracts                    | In progress |
+| 2C    | Frontend: React + Vite                                                       |             |
+| 3     | Debt management                                                              |             |
+| 4     | Credit cards: statements, installments                                       |             |
+| 5     | Planning and budget                                                          |             |
+| 6     | Debt payoff simulator (avalanche / snowball)                                 |             |
+| 7     | Financial goals                                                              |             |
+| 8     | Analytics, snapshots, projections                                            |             |
+| 9     | Dashboard                                                                    |             |
+| 10    | Investments                                                                  |             |
+| 11    | Automatic exchange rates, CSV/OFX import, Wise                               |             |
+| 12    | Advanced security and audit                                                  |             |
 
 ### Phase 2B slices
 
 Phase 2B is delivered in slices, each merged into `main` before the next one starts.
 
-| Slice | Scope | Status |
-| --- | --- | --- |
-| 1 | Backend skeleton: Hono, Drizzle, SQLite, migrations with backup, `@solvia/contracts` | ✅ Done |
-| 2 | Accounts, overdraft limit (BR-22) | ✅ Done |
-| 3 | Categories, two-level hierarchy (BR-70, BR-71) | ✅ Done |
-| 4 | Manual exchange rates (BR-80 to BR-83) | ✅ Done |
-| 5 | Transactions and postings; `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`; balances in the API | |
-| 6 | Manual backup, restore and JSON export | |
+| Slice | Scope                                                                                | Status  |
+| ----- | ------------------------------------------------------------------------------------ | ------- |
+| 1     | Backend skeleton: Hono, Drizzle, SQLite, migrations with backup, `@solvia/contracts` | ✅ Done |
+| 2     | Accounts, overdraft limit (BR-22)                                                    | ✅ Done |
+| 3     | Categories, two-level hierarchy (BR-70, BR-71)                                       | ✅ Done |
+| 4     | Manual exchange rates (BR-80 to BR-83)                                               | ✅ Done |
+| 5     | Transactions and postings; `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`; balances in the API  |         |
+| 6     | Manual backup, restore and JSON export                                               |         |
 
 After the MVP (phases 0–3): **reconciliation**, then **CSV import** (preview, validation, column mapping, duplicate detection, confirmation, idempotent re-import).

@@ -10,19 +10,18 @@ I am a junior developer, and this project is also how I am learning. Most of the
 
 This is how the work is divided:
 
-| I do | AI (Claude Code) does |
-| --- | --- |
-| Define the requirements and the financial rules | Propose architecture options and trade-offs |
-| Make every architectural decision | Write most of the implementation and tests |
+| I do                                                     | AI (Claude Code) does                        |
+| -------------------------------------------------------- | -------------------------------------------- |
+| Define the requirements and the financial rules          | Propose architecture options and trade-offs  |
+| Make every architectural decision                        | Write most of the implementation and tests   |
 | Review, run and validate every phase before approving it | Explain the code and the reasoning behind it |
-| Decide what is built next and what is left out | Flag ambiguities, risks and inconsistencies |
+| Decide what is built next and what is left out           | Flag ambiguities, risks and inconsistencies  |
 
 The AI is a development tool and a tutor. It is not the source of truth for financial decisions or requirements. Every phase is reviewed and approved by me before the next one starts.
 
 ## Why this project exists
 
 Spreadsheets become hard to maintain as financial complexity grows. I wanted a single system that answers:
-
 - What do I currently have?
 - What do I owe?
 - What is coming next?
@@ -44,27 +43,27 @@ Spreadsheets become hard to maintain as financial complexity grows. I wanted a s
 
 Early development. The financial core exists; the backend (SQLite persistence and HTTP API) is being built in Phase 2B, in slices (see [architecture.md](docs/architecture.md#phase-2b-slices)). There is no user interface yet.
 
-| Phase | Scope | Status |
-| --- | --- | --- |
-| 0 | Foundation: TypeScript, Vitest, Biome, Git hooks, documentation | ✅ Done |
-| 1 | Financial core: money, exchange rates, double-entry ledger | ✅ Done |
-| 2A | Monorepo (npm workspaces), CI, Dependabot | ✅ Done |
-| 2B | Backend: SQLite persistence, HTTP API, accounts, categories, manual exchange rates, transactions, backup | In progress |
-| 2C | Minimal UI (React + Vite) | Next |
-| 3–12 | Debts, credit cards, planning, payoff simulator, goals, analytics, dashboard, investments, integrations, advanced security | Planned |
+| Phase | Scope                                                                                                                      | Status      |
+| ----- | -------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| 0     | Foundation: TypeScript, Vitest, Biome, Git hooks, documentation                                                            | ✅ Done     |
+| 1     | Financial core: money, exchange rates, double-entry ledger                                                                 | ✅ Done     |
+| 2A    | Monorepo (npm workspaces), CI, Dependabot                                                                                  | ✅ Done     |
+| 2B    | Backend: SQLite persistence, HTTP API, accounts, categories, manual exchange rates, transactions, backup                   | In progress |
+| 2C    | Minimal UI (React + Vite)                                                                                                  | Next        |
+| 3–12  | Debts, credit cards, planning, payoff simulator, goals, analytics, dashboard, investments, integrations, advanced security | Planned     |
 
 The full roadmap and rules are in [docs/](docs/).
 
 ## Documentation
 
-| Document | Contents |
-| --- | --- |
-| [architecture.md](docs/architecture.md) | Layers, ledger model, structure, stack, roadmap |
-| [business-rules.md](docs/business-rules.md) | Every approved financial rule and its implementation status |
-| [financial-model.md](docs/financial-model.md) | Entities, postings, formulas |
-| [security.md](docs/security.md) | Data protection and secret handling |
-| [development.md](docs/development.md) | Setup, scripts, workspaces, conventions |
-| [adr/](docs/adr/) | Architecture decision records |
+| Document                                      | Contents                                                    |
+| --------------------------------------------- | ----------------------------------------------------------- |
+| [architecture.md](docs/architecture.md)       | Layers, ledger model, structure, stack, roadmap             |
+| [business-rules.md](docs/business-rules.md)   | Every approved financial rule and its implementation status |
+| [financial-model.md](docs/financial-model.md) | Entities, postings, formulas                                |
+| [security.md](docs/security.md)               | Data protection and secret handling                         |
+| [development.md](docs/development.md)         | Setup, scripts, workspaces, conventions                     |
+| [adr/](docs/adr/)                             | Architecture decision records                               |
 
 ## Getting started
 
@@ -91,8 +90,8 @@ docs            requirements, rules, architecture and decision records
 
 ## Tech stack
 
-| In use | Planned |
-| --- | --- |
+| In use                                                                                                                   | Planned                 |
+| ------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
 | Node.js 24, TypeScript (strict), npm workspaces, Zod, Vitest, Biome, Gitleaks, GitHub Actions, SQLite, Drizzle ORM, Hono | React + Vite (Phase 2C) |
 
 ## Important note
