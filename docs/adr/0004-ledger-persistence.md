@@ -490,6 +490,7 @@ rules, and the core is their only definition.
 
 ### 12. Tables
 
+_Implemented on 2026-10-25 (`0003_ledger.sql`, `schema/transactions.ts`, `schema/postings.ts`)._
 - **`transactions`:**
   - `id`, `date` (`YYYY-MM-DD`), `description`, `type`;
   - `exchange_rate` (nullable `TEXT`, L5);
