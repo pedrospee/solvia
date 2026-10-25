@@ -110,12 +110,71 @@ describe("committed migrations", () => {
       )
       .pluck()
       .all();
-    expect(tables).toEqual(["accounts", "categories", "exchange_rates"]);
+    expect(tables).toEqual([
+      "accounts",
+      "categories",
+      "exchange_rates",
+      "postings",
+      "transactions",
+    ]);
+  });
+
+  it("add the ledger to a database with data, keeping every row and foreign key", () => {
+    const sqlite = openFileDatabase();
+    migrateDatabase(sqlite, { backupDir, migrationsFolder: committedMigrationsUpTo(3) });
+    const t = "2026-09-01T10:00:00.000Z";
+    sqlite
+      .prepare("INSERT INTO accounts VALUES ('a1', 'Demo Bank', NULL, 'BANK', 'EUR', ?, ?, ?, ?)")
+      .run(90_071_992_547_409_930n, t, t, t);
+    sqlite
+      .prepare("INSERT INTO categories VALUES ('food', 'Food', 'EXPENSE', NULL, NULL, ?, ?)")
+      .run(t, t);
+    sqlite
+      .prepare(
+        "INSERT INTO categories VALUES ('groceries', 'Groceries', 'EXPENSE', 'food', NULL, ?, ?)",
+      )
+      .run(t, t);
+    sqlite
+      .prepare(
+        "INSERT INTO exchange_rates VALUES ('r1', 'EUR', 'BRL', '6.2', '2026-09-01', 'MANUAL', ?)",
+      )
+      .run(t);
+    const snapshot = () => ({
+      accounts: sqlite.prepare("SELECT * FROM accounts").all(),
+      categories: sqlite.prepare("SELECT * FROM categories ORDER BY id").all(),
+      exchangeRates: sqlite.prepare("SELECT * FROM exchange_rates").all(),
+    });
+    const before = snapshot();
+
+    const result = migrateDatabase(sqlite, { backupDir });
+
+    expect(result).toMatchObject({ status: "migrated", applied: 1 });
+    expect(backupFiles()).toHaveLength(1);
+    expect(snapshot()).toEqual(before);
+    expect(sqlite.pragma("foreign_key_check")).toEqual([]);
+    expect(sqlite.pragma("foreign_keys", { simple: true })).toBe(1n);
+    expect(countPendingMigrations(sqlite)).toBe(0);
+
+    // The new tables reference the existing rows, and keep them from being deleted.
+    sqlite
+      .prepare(
+        "INSERT INTO transactions VALUES ('t1', '2026-09-02', 'Groceries', 'EXPENSE', NULL, NULL, ?, ?)",
+      )
+      .run(t, t);
+    sqlite
+      .prepare(
+        "INSERT INTO postings VALUES ('t1', 0, NULL, 'groceries', NULL, 1000, 'EUR'), ('t1', 1, 'a1', NULL, NULL, -1000, 'EUR')",
+      )
+      .run();
+    expect(() => sqlite.prepare("DELETE FROM accounts WHERE id = 'a1'").run()).toThrow(
+      /FOREIGN KEY/,
+    );
   });
 
   it("add exchange_rates to a database with data, keeping every row and foreign key", () => {
     const sqlite = openFileDatabase();
     migrateDatabase(sqlite, { backupDir, migrationsFolder: committedMigrationsUpTo(2) });
+    const upToExchangeRates = committedMigrationsUpTo(3);
     const t = "2026-09-01T10:00:00.000Z";
     sqlite
       .prepare(
@@ -136,7 +195,7 @@ describe("committed migrations", () => {
     });
     const before = snapshot();
 
-    const result = migrateDatabase(sqlite, { backupDir });
+    const result = migrateDatabase(sqlite, { backupDir, migrationsFolder: upToExchangeRates });
 
     expect(result).toMatchObject({ status: "migrated", applied: 1 });
     expect(backupFiles()).toHaveLength(1);
@@ -146,7 +205,7 @@ describe("committed migrations", () => {
     expect(() => sqlite.prepare("DELETE FROM categories WHERE id = 'food'").run()).toThrow(
       /FOREIGN KEY/,
     );
-    expect(countPendingMigrations(sqlite)).toBe(0);
+    expect(countPendingMigrations(sqlite, upToExchangeRates)).toBe(0);
   });
 });
 
