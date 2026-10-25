@@ -1,9 +1,17 @@
-import Database from "better-sqlite3";
+import Database, { type RunResult } from "better-sqlite3";
 import { type BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import * as schema from "./schema/index.ts";
 
 export type SqliteConnection = Database.Database;
 export type AppDatabase = BetterSQLite3Database<typeof schema>;
+
+/**
+ * What repositories run their queries on: the database itself, or the transaction a
+ * service opened with `db.transaction(...)`, so every write of a use case commits or
+ * rolls back together (ADR-0004, section 1).
+ */
+export type DbExecutor = BaseSQLiteDatabase<"sync", RunResult, typeof schema>;
 
 /**
  * Opens a SQLite connection configured for Solvia:

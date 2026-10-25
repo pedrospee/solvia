@@ -1,11 +1,11 @@
-import { DomainError } from "@solvia/core";
+import { DomainError, parseLocalDate } from "@solvia/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestDatabase,
   type TestDatabase,
 } from "../../infrastructure/database/test-fixtures.ts";
-import { NotFoundError } from "../errors.ts";
-import { createAccountRepository } from "./account-repository.ts";
+import { ConflictError, NotFoundError } from "../errors.ts";
+import { createTransactionService } from "../transactions/transaction-service.ts";
 import { createAccountService } from "./account-service.ts";
 
 const eur = (amountMinor: bigint) => ({ amountMinor, currency: "EUR" as const });
@@ -15,7 +15,7 @@ let clock: Date;
 
 function service() {
   let sequence = 0;
-  return createAccountService(createAccountRepository(database.db), {
+  return createAccountService(database.db, {
     now: () => clock,
     newId: () => `fictitious-id-${++sequence}`,
   });
@@ -163,6 +163,26 @@ describe("account service", () => {
     accounts.delete(account.id);
 
     expect(() => accounts.get(account.id)).toThrowError(NotFoundError);
+  });
+
+  it("refuses to delete an account with transactions, voided ones included (ACCOUNT_IN_USE)", () => {
+    const accounts = service();
+    const { account } = accounts.create({ name: "Demo", kind: "BANK", currency: "EUR" });
+    const transactions = createTransactionService(database.db, { now: () => clock });
+    const { transaction } = transactions.create({
+      type: "OPENING_BALANCE",
+      date: parseLocalDate("2026-09-01"),
+      description: "Fictitious opening",
+      accountId: account.id,
+      balance: eur(10_000n),
+    });
+    transactions.void(transaction.id);
+
+    expect(() => accounts.delete(account.id)).toThrowError(
+      expect.objectContaining({ code: "ACCOUNT_IN_USE" }),
+    );
+    expect(() => accounts.delete(account.id)).toThrow(ConflictError);
+    expect(accounts.get(account.id).account).toEqual(account);
   });
 
   it("reports a missing account as ACCOUNT_NOT_FOUND in every operation", () => {

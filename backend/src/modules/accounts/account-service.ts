@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { type Account, createAccount, type Money } from "@solvia/core";
-import { NotFoundError } from "../errors.ts";
-import type { AccountRecord, AccountRepository } from "./account-repository.ts";
+import type { AppDatabase } from "../../infrastructure/database/client.ts";
+import { ConflictError, NotFoundError } from "../errors.ts";
+import { createTransactionRepository } from "../transactions/transaction-repository.ts";
+import { type AccountRecord, createAccountRepository } from "./account-repository.ts";
 
 export type NewAccount = Omit<Account, "id">;
 
@@ -20,9 +22,10 @@ export type AccountService = ReturnType<typeof createAccountService>;
  * lifecycle change only: it never touches the ledger.
  */
 export function createAccountService(
-  repository: AccountRepository,
+  db: AppDatabase,
   options: { now?: () => Date; newId?: () => string } = {},
 ) {
+  const repository = createAccountRepository(db);
   const now = () => (options.now ?? (() => new Date()))().toISOString();
   const newId = options.newId ?? randomUUID;
 
@@ -73,9 +76,28 @@ export function createAccountService(
       return current.archivedAt === null ? current : save(current, { archivedAt: null });
     },
 
+    /**
+     * Deletes an account no posting references, voided transactions included: their
+     * postings are kept (ACCOUNT_IN_USE, ADR-0004 L9). Checked and deleted in one
+     * database transaction. An account in use can be archived instead.
+     */
     delete(id: string): void {
-      load(id);
-      repository.delete(id);
+      db.transaction(
+        (tx) => {
+          const accounts = createAccountRepository(tx);
+          if (accounts.findById(id) === undefined) {
+            throw new NotFoundError("ACCOUNT_NOT_FOUND", `No account with id "${id}".`);
+          }
+          if (createTransactionRepository(tx).isAccountReferenced(id)) {
+            throw new ConflictError(
+              "ACCOUNT_IN_USE",
+              "The account has transactions, so it cannot be deleted; archive it instead.",
+            );
+          }
+          accounts.delete(id);
+        },
+        { behavior: "immediate" },
+      );
     },
   };
 }

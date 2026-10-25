@@ -1,16 +1,18 @@
+import { parseLocalDate } from "@solvia/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createTestDatabase,
   type TestDatabase,
 } from "../../infrastructure/database/test-fixtures.ts";
-import { createCategoryRepository } from "./category-repository.ts";
+import { createAccountService } from "../accounts/account-service.ts";
+import { createTransactionService } from "../transactions/transaction-service.ts";
 import { createCategoryService } from "./category-service.ts";
 
 let database: TestDatabase;
 let clock: Date;
 
 function service() {
-  return createCategoryService(createCategoryRepository(database.db), {
+  return createCategoryService(database.db, {
     now: () => clock,
     // Sequential ids (c1, c2…), so tests can refer to them.
     newId: (() => {
@@ -206,6 +208,32 @@ describe("deleting categories", () => {
 
     expect(() => categories.delete(food.id)).toThrowError(code("CATEGORY_HAS_CHILDREN"));
     expect(categories.get(groceries.id)).toBeDefined();
+  });
+
+  it("refuses to delete a category with transactions, voided ones included (CATEGORY_IN_USE)", () => {
+    const { categories, food, groceries, housing } = seeded();
+    const { account } = createAccountService(database.db).create({
+      name: "Demo Bank",
+      kind: "BANK",
+      currency: "EUR",
+    });
+    const transactions = createTransactionService(database.db, { now: () => clock });
+    const expense = (categoryId: string) =>
+      transactions.create({
+        type: "EXPENSE",
+        date: parseLocalDate("2026-09-01"),
+        description: "Fictitious",
+        paidFromAccountId: account.id,
+        categoryId,
+        amount: { amountMinor: 1_000n, currency: "EUR" },
+      });
+    transactions.void(expense(housing.id).transaction.id);
+    expense(food.id);
+
+    expect(() => categories.delete(housing.id)).toThrowError(code("CATEGORY_IN_USE"));
+    // Children take precedence over postings.
+    expect(() => categories.delete(food.id)).toThrowError(code("CATEGORY_HAS_CHILDREN"));
+    expect(() => categories.delete(groceries.id)).not.toThrow();
   });
 
   it("reports a missing category as CATEGORY_NOT_FOUND in every operation", () => {

@@ -1,6 +1,6 @@
 import type { Category } from "@solvia/core";
 import { asc, eq, isNull } from "drizzle-orm";
-import type { AppDatabase } from "../../infrastructure/database/client.ts";
+import type { DbExecutor } from "../../infrastructure/database/client.ts";
 import { categories } from "../../infrastructure/database/schema/categories.ts";
 
 /** A category as persisted: the core Category plus its lifecycle timestamps. */
@@ -15,7 +15,7 @@ type CategoryRow = typeof categories.$inferSelect;
 
 export type CategoryRepository = ReturnType<typeof createCategoryRepository>;
 
-export function createCategoryRepository(db: AppDatabase) {
+export function createCategoryRepository(db: DbExecutor) {
   return {
     insert(record: CategoryRecord): void {
       db.insert(categories).values(toRow(record)).run();

@@ -85,7 +85,8 @@ backend/                      @solvia/backend
     │   ├── errors.ts         NotFoundError, ConflictError (application errors without HTTP status)
     │   ├── accounts/         account service (use cases) and repository (persistence)
     │   ├── categories/       category service and repository
-    │   └── exchange-rates/   manual exchange rate service and repository (append-only)
+    │   ├── exchange-rates/   manual exchange rate service and repository (append-only)
+    │   └── transactions/     ledger use cases (create, edit, void, read) and repository; the effective ledger
     ├── infrastructure/
     │   ├── config/           environment validation
     │   └── database/         SQLite client, schema, migrations, backup
@@ -96,7 +97,7 @@ docs/adr/                     architecture decision records
 
 Root: shared configuration (`tsconfig.base.json`, `biome.json`, `vitest.config.ts`), CI in `.github/`.
 
-Later in Phase 2B: `backend/src/modules/transactions/` (slice 5). From Phase 2C: `frontend/`.
+From Phase 2C: `frontend/`.
 
 ## Stack
 
