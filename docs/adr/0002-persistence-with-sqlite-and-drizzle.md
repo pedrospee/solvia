@@ -91,8 +91,29 @@ the WAL) and refuses to overwrite an existing file. Verification opens the copy 
 `PRAGMA integrity_check`, and compares every schema object and every table's row count with the
 source.
 
-Manual backup, restore and a complete JSON export are scripts (`db:backup`, `db:restore`,
-`data:export`, Phase 2B slice 6). Backups and exports live outside the repository.
+### Manual backup, restore and export
+
+Scripts, not API routes (Phase 2B, slice 6). Backups and exports live outside the repository, and
+every file and directory they write is private: directories 700, files 600 (docs/security.md).
+- **`npm run db:backup`** writes a verified backup to `BACKUP_DIR`, as before a migration. It reads
+  the file, not the schema, so it also works while migrations are pending.
+- **`npm run db:restore -- <file>`** replaces the database with a backup:
+  1. the file is checked: a SQLite database, `integrity_check` ok, no broken foreign keys, a
+     migration history (made by Solvia), and no migration newer than the code knows. Otherwise
+     nothing is changed and no backup is written (`InvalidBackupError`);
+  2. the current database, unless empty, is backed up and verified (`pre-restore`), so a restore
+     can itself be undone by restoring that file;
+  3. SQLite's online backup API copies the backup into place in one step. A connection that is
+     already open, such as a running server's, sees the restored data;
+  4. the result is compared with the backup (schema and row counts).
+
+  An older backup is restored as it is; the server then refuses to start until
+  `npm run db:migrate` brings it up to date. A database cannot be restored onto itself.
+- **`npm run data:export`** writes every record (archived accounts and categories, manual rates,
+  voided transactions included) as JSON to `EXPORT_DIR` (optional; an `exports` directory next to
+  `BACKUP_DIR` by default). It uses the API's response shapes, read in one database transaction,
+  and leaves derived values out. It refuses to run while migrations are pending. An export is for
+  reading and keeping outside Solvia; `db:restore` reads backups, not exports.
 
 ## Alternatives considered
 

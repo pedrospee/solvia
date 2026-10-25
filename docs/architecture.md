@@ -86,11 +86,13 @@ backend/                      @solvia/backend
     │   ├── accounts/         account service (use cases) and repository (persistence)
     │   ├── categories/       category service and repository
     │   ├── exchange-rates/   manual exchange rate service and repository (append-only)
-    │   └── transactions/     ledger use cases (create, edit, void, read) and repository; the effective ledger
+    │   ├── transactions/     ledger use cases (create, edit, void, read) and repository; the effective ledger
+    │   └── data-export/      the complete JSON export (data:export)
     ├── infrastructure/
     │   ├── config/           environment validation
-    │   └── database/         SQLite client, schema, migrations, backup
-    ├── scripts/              db:migrate and other operational scripts
+    │   ├── database/         SQLite client, schema, migrations, backup, restore
+    │   └── files/            private files and directories (600 / 700)
+    ├── scripts/              db:migrate, db:backup, db:restore, data:export
     └── main.ts               bootstrap: checks the database, serves on 127.0.0.1
 docs/adr/                     architecture decision records
 ```
@@ -125,7 +127,7 @@ No dependency is added without a documented reason.
 | 1     | Financial core: money, exchange rates, ledger                                | ✅ Done     |
 | 2     | Persistence, accounts, transactions, manual rates, backup/export, minimal UI | In progress |
 | 2A    | Monorepo with npm workspaces, CI                                             | ✅ Done     |
-| 2B    | Backend skeleton: Hono, Drizzle, SQLite, shared contracts                    | In progress |
+| 2B    | Backend: Hono, Drizzle, SQLite, shared contracts, ledger, backup and export  | ✅ Done     |
 | 2C    | Frontend: React + Vite                                                       |             |
 | 3     | Debt management                                                              |             |
 | 4     | Credit cards: statements, installments                                       |             |
@@ -149,6 +151,6 @@ Phase 2B is delivered in slices, each merged into `main` before the next one sta
 | 3     | Categories, two-level hierarchy (BR-70, BR-71)                                       | ✅ Done |
 | 4     | Manual exchange rates (BR-80 to BR-83)                                               | ✅ Done |
 | 5     | Transactions and postings; `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`; balances in the API  | ✅ Done |
-| 6     | Manual backup, restore and JSON export                                               |         |
+| 6     | Manual backup, restore and JSON export                                               | ✅ Done |
 
 After the MVP (phases 0–3): **reconciliation**, then **CSV import** (preview, validation, column mapping, duplicate detection, confirmation, idempotent re-import).

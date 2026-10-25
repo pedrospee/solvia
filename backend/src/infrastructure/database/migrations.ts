@@ -130,7 +130,8 @@ function pendingMigrations(sqlite: SqliteConnection, migrationsFolder: string): 
   );
 }
 
-function lastAppliedMigrationMillis(sqlite: SqliteConnection): bigint | undefined {
+/** When the latest applied migration was generated; undefined for a database never migrated. */
+export function lastAppliedMigrationMillis(sqlite: SqliteConnection): bigint | undefined {
   if (!hasMigrationsTable(sqlite)) {
     return undefined;
   }
@@ -147,7 +148,7 @@ function hasMigrationsTable(sqlite: SqliteConnection): boolean {
   return row !== undefined;
 }
 
-function isEmptyDatabase(sqlite: SqliteConnection): boolean {
+export function isEmptyDatabase(sqlite: SqliteConnection): boolean {
   const row = sqlite.prepare("SELECT count(*) AS total FROM sqlite_schema").get() as {
     total: bigint;
   };

@@ -13,7 +13,10 @@
     "build": "tsc -p tsconfig.build.json && node -e \"require('node:fs').cpSync('src/infrastructure/database/migrations', 'dist/infrastructure/database/migrations', { recursive: true })\"",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --env-file-if-exists=../.env src/scripts/db-migrate.ts"
+    "db:migrate": "node --env-file-if-exists=../.env src/scripts/db-migrate.ts",
+    "db:backup": "node --env-file-if-exists=../.env src/scripts/db-backup.ts",
+    "db:restore": "node --env-file-if-exists=../.env src/scripts/db-restore.ts",
+    "data:export": "node --env-file-if-exists=../.env src/scripts/data-export.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.1.4",

@@ -43,6 +43,9 @@ Run from the repository root:
 | `npm run build` / `npm start`       | Compile the backend to `backend/dist/` / run the compiled app                         |
 | `npm run db:migrate`                | Applies pending migrations; backs up an existing database first                       |
 | `npm run db:generate`               | Generates a new migration after a schema change                                       |
+| `npm run db:backup`                 | Writes a verified backup to `BACKUP_DIR`                                              |
+| `npm run db:restore -- <file>`      | Replaces the database with a backup, after a verified backup of the current one       |
+| `npm run data:export`               | Writes every record as JSON to `EXPORT_DIR`                                           |
 | `npm run secrets:scan`              | Gitleaks scan of the whole Git history                                                |
 
 ### Working with one workspace
@@ -74,6 +77,9 @@ SQLite through Drizzle ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.
   table: say so in the commit, and add a test that migrates a database with representative data
   and checks every row is kept, `foreign_key_check` is empty and foreign keys are on afterwards.
 - Integer columns use `bigintInteger` (never Drizzle's `integer()`), so money stays `bigint`.
+- **Backup, restore and export** ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md#manual-backup-restore-and-export)):
+  stop the server before `db:restore`. A restore always leaves a `pre-restore` backup of what it
+  replaced; restoring that file undoes it. After restoring an older backup, run `npm run db:migrate`.
 
 ## Conventions
 

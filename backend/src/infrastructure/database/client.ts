@@ -1,6 +1,7 @@
 import Database, { type RunResult } from "better-sqlite3";
 import { type BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
+import { makePrivateFile } from "../files/private-files.ts";
 import * as schema from "./schema/index.ts";
 
 export type SqliteConnection = Database.Database;
@@ -18,7 +19,9 @@ export type DbExecutor = BaseSQLiteDatabase<"sync", RunResult, typeof schema>;
  * - foreign keys enforced (SQLite leaves them off per connection by default);
  * - WAL journal for file databases, so reads never block the single writer;
  * - safe integers, so every INTEGER column is read as `bigint` and money
- *   never passes through a JavaScript `number` (ADR-0002).
+ *   never passes through a JavaScript `number` (ADR-0002);
+ * - a file database readable only by its owner (600). SQLite gives the WAL and
+ *   shared-memory files the database file's mode.
  */
 export function openSqlite(
   path: string,
@@ -28,6 +31,7 @@ export function openSqlite(
   sqlite.defaultSafeIntegers(true);
   sqlite.pragma("foreign_keys = ON");
   if (!options.readonly && path !== ":memory:") {
+    makePrivateFile(path);
     sqlite.pragma("journal_mode = WAL");
   }
   return sqlite;

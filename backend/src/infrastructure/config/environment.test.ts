@@ -12,7 +12,18 @@ describe("loadEnvironment", () => {
       NODE_ENV: "development",
       PORT: 3000,
       ...requiredPaths,
+      EXPORT_DIR: "/var/solvia/exports",
     });
+  });
+
+  it("puts exports next to the backup directory unless EXPORT_DIR is set", () => {
+    expect(loadEnvironment(requiredPaths).EXPORT_DIR).toBe("/var/solvia/exports");
+    expect(
+      loadEnvironment({ ...requiredPaths, EXPORT_DIR: "/Volumes/Private/exports" }).EXPORT_DIR,
+    ).toBe("/Volumes/Private/exports");
+    expect(() => loadEnvironment({ ...requiredPaths, EXPORT_DIR: "exports" })).toThrow(
+      InvalidEnvironmentError,
+    );
   });
 
   it("accepts a supported NODE_ENV and a numeric PORT", () => {
