@@ -59,6 +59,31 @@ describe("validate", () => {
     });
   });
 
+  it("rejects a JSON body sent without a JSON Content-Type with 400 INVALID_REQUEST", async () => {
+    // Hono's validator reads such a body as {}, which an all-optional schema would accept.
+    const body = JSON.stringify({ title: "Fictitious", amountMinor: "1050" });
+    const requests = [{ body }, { headers: { "Content-Type": "text/plain" }, body }];
+
+    for (const init of requests) {
+      const response = await testApp().request("/notes", { method: "POST", ...init });
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({
+        error: { code: "INVALID_REQUEST", message: "The request body must be JSON." },
+      });
+    }
+  });
+
+  it("accepts a JSON Content-Type with parameters", async () => {
+    const response = await testApp().request("/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ title: "Fictitious", amountMinor: "1050" }),
+    });
+
+    expect(response.status).toBe(200);
+  });
+
   it("validates other request parts, such as the query string", async () => {
     const ok = await testApp().request("/search?q=rent");
     const invalid = await testApp().request("/search?q=r");

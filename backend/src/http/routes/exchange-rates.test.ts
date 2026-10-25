@@ -103,7 +103,7 @@ describe("POST /api/exchange-rates", () => {
       body: "{ not json",
     });
 
-    expect([plainText.status, await errorCode(plainText)]).toEqual([400, "VALIDATION_FAILED"]);
+    expect([plainText.status, await errorCode(plainText)]).toEqual([400, "INVALID_REQUEST"]);
     expect([malformed.status, await errorCode(malformed)]).toEqual([400, "INVALID_REQUEST"]);
     expect(await storedRates()).toEqual([]);
   });
