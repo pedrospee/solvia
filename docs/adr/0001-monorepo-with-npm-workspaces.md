@@ -41,7 +41,6 @@ symlink to its real path (`packages/core/src/index.ts`) before deciding whether 
 Type stripping skips files under `node_modules`, but that real path is outside it. TypeScript
 follows the same link for typechecking, and `tsc` on the backend emits only the backend's own
 files.
-
 - `npm run dev` runs the backend source and restarts when a core file changes.
 - `npm run build && npm start` runs the compiled backend, which loads the core source through type
   stripping.
@@ -54,11 +53,11 @@ the simpler option. Switching later only touches the core's `package.json` and t
 
 ## Alternatives considered
 
-| Option | Why not now |
-| --- | --- |
-| **Keep a single package** | Simplest, but core purity stays a convention, and the frontend (Phase 2C) would share one `package.json` and dependency list with the server. |
-| **pnpm workspaces** | Stricter dependency isolation and faster installs, but it is another tool to install and learn. npm already ships with Node and handles two or three workspaces well. |
-| **Turborepo (or Nx)** | Task caching and dependency-aware pipelines pay off with many packages and slow builds. We have two small workspaces and a check that runs in seconds. |
+| Option                    | Why not now                                                                                                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep a single package** | Simplest, but core purity stays a convention, and the frontend (Phase 2C) would share one `package.json` and dependency list with the server.                         |
+| **pnpm workspaces**       | Stricter dependency isolation and faster installs, but it is another tool to install and learn. npm already ships with Node and handles two or three workspaces well. |
+| **Turborepo (or Nx)**     | Task caching and dependency-aware pipelines pay off with many packages and slow builds. We have two small workspaces and a check that runs in seconds.                |
 
 ## Consequences
 

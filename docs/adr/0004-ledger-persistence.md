@@ -9,7 +9,6 @@ already exists in `@solvia/core` (Phase 1) and is not redefined here. This ADR d
 stored, edited and voided so that persistence never weakens it.
 
 How to read it:
-
 - **Current behaviour** is what the code does today, verified by running it.
 - **Approved direction** marks a decision approved during review (2026-10-01 and 2026-10-03; see
   the decision log at the end). The complete document was accepted on 2026-10-04.
@@ -60,7 +59,6 @@ A conversion in the other direction (R$620 → €100) flips the signs and keeps
 ### Current behaviour: gaps found by running the core
 
 `assertValidTransaction` **accepts** all of the following today. Only the factories prevent them:
-
 - a two-currency transaction whose rate does not match its legs (9 instead of 6.2);
 - a rate with source `MANUAL`, a BRL/EUR rate, or a rate effective on another date;
 - clearing postings with the **same sign** in both currencies (money leaves both accounts);
@@ -69,7 +67,6 @@ A conversion in the other direction (R$620 → €100) flips the signs and keeps
   rejected, because it cannot balance without clearing postings.
 
 Other findings:
-
 - **Clearing postings per currency.** The rule is "at least one" (`.some`), not "exactly one": the
   EUR clearing split as 60 + 40 is accepted. The factories produce exactly one per currency.
 - **Checking the rate with `convertMoney` would be wrong.**
@@ -99,12 +96,11 @@ Other findings:
 - The documented lifecycle promises, for slice 5: `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`, and no new
   transactions on archived accounts or categories.
 - ADR-0002 does not forbid `CHECK`. The rule appears in the schema comments and the slice 2 and 3
-  commits: "no CHECK constraints *duplicating core rules*".
+  commits: "no CHECK constraints _duplicating core rules_".
 
 ### Verified facts about the stack
 
 Checked against drizzle-orm 0.45.3 and better-sqlite3 13.0.3:
-
 1. `BaseSQLiteDatabase<"sync", RunResult, typeof schema>` accepts both the database and a
    transaction object.
 2. Inside `db.transaction(callback)`, a thrown error, or a statement that fails halfway (e.g. a
@@ -124,9 +120,8 @@ Checked against drizzle-orm 0.45.3 and better-sqlite3 13.0.3:
 
 ### 1. Atomicity: one database transaction per ledger use case
 
-*Approved direction: the database transaction of the approved creation and editing pipelines
-(L7-B, L7-C; sections 6 and 7).*
-
+_Approved direction: the database transaction of the approved creation and editing pipelines
+(L7-B, L7-C; sections 6 and 7)._
 - **The service owns the boundary.** A use case that writes more than one row, or reads in order to
   decide a write, runs its whole body inside `db.transaction(work, { behavior: "immediate" })`.
   Routes and repositories never open transactions.
@@ -144,7 +139,7 @@ repository that opens its own transaction.
 
 ### 2. Posting model: three nullable targets, exactly one set
 
-*Approved direction (L1, L2).*
+_Approved direction (L1, L2)._
 
 ```text
 postings
@@ -168,7 +163,6 @@ postings
 
 **`system_role` is an internal target.** Accounts and categories are destinations the user chooses
 (as the parameters of an operation). System roles are not:
-
 - `OPENING_BALANCE_EQUITY` and `EXCHANGE_CLEARING` postings are created only by the domain
   operations: the factories for opening balances, conversions and foreign charges.
 - No API request names a system role or supplies a system posting, because requests describe
@@ -182,9 +176,9 @@ only because of how the database stores a core type. The core cannot see them, b
 receives an invalid union. Every **domain and financial** invariant stays in `@solvia/core`, and no
 `CHECK` duplicates one:
 
-| The database enforces (structure) | The core enforces (domain) |
-| --- | --- |
-| Exactly one posting target | Which targets a transaction type may use |
+| The database enforces (structure)      | The core enforces (domain)                                         |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| Exactly one posting target             | Which targets a transaction type may use                           |
 | `NOT NULL`, primary keys, foreign keys | Zero sum per currency, signs, currencies, system role usage, rates |
 
 Slice 5 has exactly one `CHECK`: the exactly-one-target constraint above. A new structural `CHECK`
@@ -193,8 +187,7 @@ needs a new ADR.
 
 ### 3. Referential behaviour: `RESTRICT` everywhere, never `CASCADE`
 
-*Approved direction (with L9).*
-
+_Approved direction (with L9)._
 - `postings.account_id`, `postings.category_id` and `postings.transaction_id` use
   `ON DELETE RESTRICT`. No financial row is ever deleted by cascade, and transactions are never
   deleted at all (section 8).
@@ -217,17 +210,16 @@ needs a new ADR.
 
 ### 4. Archived accounts and categories
 
-*Approved direction (L3).*
+_Approved direction (L3)._
 
 **A transaction may never add a reference to an archived account or category.**
 
-| Change made by an edit | Allowed? |
-| --- | --- |
-| **Keep** an existing reference to an archived entity | Yes |
-| **Remove** an existing reference, where the operation allows it | Yes |
-| **Change** an archived reference to an active one | Yes |
-| **Add** a reference to an archived entity | No: 409 `ACCOUNT_ARCHIVED` / `CATEGORY_ARCHIVED` |
-
+| Change made by an edit                                          | Allowed?                                         |
+| --------------------------------------------------------------- | ------------------------------------------------ |
+| **Keep** an existing reference to an archived entity            | Yes                                              |
+| **Remove** an existing reference, where the operation allows it | Yes                                              |
+| **Change** an archived reference to an active one               | Yes                                              |
+| **Add** a reference to an archived entity                       | No: 409 `ACCOUNT_ARCHIVED` / `CATEGORY_ARCHIVED` |
 - On **create**, every reference is new, so any archived reference is rejected.
 - The rule is **identical for accounts and categories**.
 - The service compares the referenced accounts and categories before and after the edit **inside
@@ -245,10 +237,9 @@ needs a new ADR.
 
 #### 5.1 Validation: the net-clearing rule
 
-*Approved direction (L4, L4b). Implemented in `@solvia/core`, independently of the factories.*
+_Approved direction (L4, L4b). Implemented in `@solvia/core`, independently of the factories._
 
 For every transaction with two currencies:
-
 1. `netEUR` = the sum of the `EXCHANGE_CLEARING` postings in EUR; `netBRL` = the same in BRL
    (`bigint`, minor units).
 2. `netEUR ≠ 0` and `netBRL ≠ 0`.
@@ -269,22 +260,21 @@ The check never uses `convertMoney`: re-deriving the rate is exact, while conver
 rounded rate can differ by cents (see Context). `invertExchangeRate` does not take part. No step
 uses floating point.
 
-| Example | netEUR / netBRL | Stored rate | Result |
-| --- | --- | --- | --- |
-| Conversion €100 → R$620 | +100.00 / −620.00 → 6.2 | EUR/BRL 6.2, `TRANSACTION`, same date | ✅ valid |
-| Conversion R$620 → €100 | −100.00 / +620.00 → 6.2 | EUR/BRL 6.2 | ✅ valid |
-| Foreign purchase R$120, charged €20.40 | +20.40 / −120.00 → 5.882353 | EUR/BRL 5.882353 | ✅ valid |
-| EUR clearing split 60 + 40 | +100.00 / −620.00 → 6.2 | EUR/BRL 6.2 | ✅ valid (nets count) |
-| Rate does not match the legs | +100.00 / −620.00 → 6.2 | 9 | ❌ rate ≠ derived |
-| Wrong source, direction or date | — | `MANUAL`, or BRL/EUR, or another `effectiveDate` | ❌ not the executed rate |
-| Same sign in both currencies | +100.00 / +620.00 | any | ❌ not an exchange |
-| Net zero | 0 / 0 | any | ❌ no exchange happened |
-| Two-currency `INCOME` / `CARD_PAYMENT` | — | — | ❌ type cannot involve two currencies |
+| Example                                | netEUR / netBRL             | Stored rate                                      | Result                                |
+| -------------------------------------- | --------------------------- | ------------------------------------------------ | ------------------------------------- |
+| Conversion €100 → R$620                | +100.00 / −620.00 → 6.2     | EUR/BRL 6.2, `TRANSACTION`, same date            | ✅ valid                              |
+| Conversion R$620 → €100                | −100.00 / +620.00 → 6.2     | EUR/BRL 6.2                                      | ✅ valid                              |
+| Foreign purchase R$120, charged €20.40 | +20.40 / −120.00 → 5.882353 | EUR/BRL 5.882353                                 | ✅ valid                              |
+| EUR clearing split 60 + 40             | +100.00 / −620.00 → 6.2     | EUR/BRL 6.2                                      | ✅ valid (nets count)                 |
+| Rate does not match the legs           | +100.00 / −620.00 → 6.2     | 9                                                | ❌ rate ≠ derived                     |
+| Wrong source, direction or date        | —                           | `MANUAL`, or BRL/EUR, or another `effectiveDate` | ❌ not the executed rate              |
+| Same sign in both currencies           | +100.00 / +620.00           | any                                              | ❌ not an exchange                    |
+| Net zero                               | 0 / 0                       | any                                              | ❌ no exchange happened               |
+| Two-currency `INCOME` / `CARD_PAYMENT` | —                           | —                                                | ❌ type cannot involve two currencies |
 
 #### 5.2 Storage
 
-*Approved direction (L5).*
-
+_Approved direction (L5)._
 - Stored **on the transaction**, never in `exchange_rates`. That table is the append-only manual
   history read by `applicable`. Adding `TRANSACTION` rows would change slice 4's answers (whether
   reporting uses executed rates is a Phase 8 decision) and conflict with editing.
@@ -294,12 +284,12 @@ uses floating point.
 - The other fields of the core `ExchangeRate` are not stored; the repository rebuilds them when it
   reads a transaction:
 
-  | `ExchangeRate` field | Value for a transaction rate | Meaning |
-  | --- | --- | --- |
-  | `baseCurrency` / `quoteCurrency` | EUR / BRL (`CANONICAL_EXCHANGE_RATE_PAIR`) | Canonical direction (BR-80) |
-  | `source` | `TRANSACTION` | Executed rate, derived from the legs |
-  | `effectiveDate` | the transaction's `date` | The financial date of the fact |
-  | `recordedAt` | the transaction's `updatedAt` | When the current version of the transaction was recorded |
+  | `ExchangeRate` field             | Value for a transaction rate               | Meaning                                                  |
+  | -------------------------------- | ------------------------------------------ | -------------------------------------------------------- |
+  | `baseCurrency` / `quoteCurrency` | EUR / BRL (`CANONICAL_EXCHANGE_RATE_PAIR`) | Canonical direction (BR-80)                              |
+  | `source`                         | `TRANSACTION`                              | Executed rate, derived from the legs                     |
+  | `effectiveDate`                  | the transaction's `date`                   | The financial date of the fact                           |
+  | `recordedAt`                     | the transaction's `updatedAt`              | When the current version of the transaction was recorded |
 
 - **`updatedAt` is not a property of the exchange rate.** It is the version timestamp of the
   transaction, and it supplies the rate's `recordedAt`. The invariant is
@@ -312,7 +302,7 @@ uses floating point.
 
 ### 6. Creation
 
-*Approved direction (L7-B).*
+_Approved direction (L7-B)._
 
 ```text
 request → business operation → factory → core validation → DB transaction → transaction + postings
@@ -338,8 +328,7 @@ request → business operation → factory → core validation → DB transactio
 
 ### 7. Editing
 
-*Approved direction (L7-C).*
-
+_Approved direction (L7-C)._
 - An edit is a **full replacement of the operation**, never a field merge (section 9).
 - `id`, `createdAt` and `type` are **immutable**.
 - Every posting is recalculated by the factory from the submitted operation, and the transaction
@@ -371,34 +360,32 @@ the previous version: history of edits remains deferred to Phase 12.
 
 ### 8. Void instead of deletion
 
-*Approved direction (L7-D, V1 to V9).*
+_Approved direction (L7-D, V1 to V9)._
 
 A transaction is never physically deleted. A mistaken or duplicated transaction is **voided**:
-
 - the transaction and its postings stay persisted, identifiable and listable;
 - voided transactions are excluded from balances, overdraft and financial reporting;
 - voiding creates no postings;
 - the transaction API offers no physical deletion.
 
-| Rule | Decision | Reason, from the existing rules |
-| --- | --- | --- |
-| **V1** | Void is **irreversible** | BR-64: "never correct silently". A void changes balances; undoing it would change them again with no new fact. A wrong void is corrected by recording the transaction again, and both stay visible. |
-| **V2** | A voided transaction **cannot be edited**: 409 `TRANSACTION_VOIDED` | Editing a record that no longer counts changes nothing financially, but rewrites what was voided. |
-| **V3** | There is **no unvoid** | Follows from V1. Archive and unarchive are reversible because they are lifecycle, not a financial fact. |
-| **V4** | `voidedAt` is the only void state for the MVP: no `voidedBy`, no `reason` | One local user; a `reason` can be added later as a nullable column (an additive migration). Audit history is Phase 12. |
-| **V5** | Voiding a voided transaction is **idempotent** | It returns the transaction unchanged, keeps the original `voidedAt` and produces no other state change, like archiving an archived account. |
-| **V6** | A transaction referencing an archived account or category **can be voided** | Voiding adds no reference; it goes in the same direction as removing one (section 4). |
-| **V7** | Opening balance uniqueness counts **only non-voided** opening balances | At most one *effective* `OPENING_BALANCE` per account. A voided opening does not reserve the account's opening balance permanently, although it can be neither edited nor unvoided. |
-| **V8** | Lists **leave voided transactions out by default** | `includeVoided=true` shows them for history and review; `GET /api/transactions/:id` always returns a transaction, voided or not. |
+| Rule   | Decision                                                                    | Reason, from the existing rules                                                                                                                                                                     |
+| ------ | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **V1** | Void is **irreversible**                                                    | BR-64: "never correct silently". A void changes balances; undoing it would change them again with no new fact. A wrong void is corrected by recording the transaction again, and both stay visible. |
+| **V2** | A voided transaction **cannot be edited**: 409 `TRANSACTION_VOIDED`         | Editing a record that no longer counts changes nothing financially, but rewrites what was voided.                                                                                                   |
+| **V3** | There is **no unvoid**                                                      | Follows from V1. Archive and unarchive are reversible because they are lifecycle, not a financial fact.                                                                                             |
+| **V4** | `voidedAt` is the only void state for the MVP: no `voidedBy`, no `reason`   | One local user; a `reason` can be added later as a nullable column (an additive migration). Audit history is Phase 12.                                                                              |
+| **V5** | Voiding a voided transaction is **idempotent**                              | It returns the transaction unchanged, keeps the original `voidedAt` and produces no other state change, like archiving an archived account.                                                         |
+| **V6** | A transaction referencing an archived account or category **can be voided** | Voiding adds no reference; it goes in the same direction as removing one (section 4).                                                                                                               |
+| **V7** | Opening balance uniqueness counts **only non-voided** opening balances      | At most one _effective_ `OPENING_BALANCE` per account. A voided opening does not reserve the account's opening balance permanently, although it can be neither edited nor unvoided.                 |
+| **V8** | Lists **leave voided transactions out by default**                          | `includeVoided=true` shows them for history and review; `GET /api/transactions/:id` always returns a transaction, voided or not.                                                                    |
 
 **V9: voiding does not change `updatedAt`.** The three timestamps of a transaction mean:
 
-| Timestamp | Describes | Changed by |
-| --- | --- | --- |
-| `createdAt` | the creation of the financial operation | create only |
+| Timestamp   | Describes                                           | Changed by                                     |
+| ----------- | --------------------------------------------------- | ---------------------------------------------- |
+| `createdAt` | the creation of the financial operation             | create only                                    |
 | `updatedAt` | the latest change to the financial operation itself | create, and an edit that changes the operation |
-| `voidedAt` | the lifecycle transition of the operation to void | void only, once (V1, V5) |
-
+| `voidedAt`  | the lifecycle transition of the operation to void   | void only, once (V1, V5)                       |
 - `updatedAt` describes the operation; `voidedAt` describes its lifecycle.
 - Voiding creates no new version of the operation and does not recalculate the exchange rate, so
   it does not modify `updatedAt`. The L5 invariant `exchangeRate.recordedAt === updatedAt` holds
@@ -413,7 +400,6 @@ records.** The effective ledger is the set of non-voided transactions, as core `
 objects.
 
 The responsibilities:
-
 - **The persistence and service layer decides which transactions are effective.** A single
   read-model boundary in the transaction repository is the only place that applies the effective
   condition (`voided_at IS NULL`). It returns the effective ledger, for example through a
@@ -426,7 +412,6 @@ The responsibilities:
   its own `voided_at IS NULL` filter.
 
 How the boundary is enforced:
-
 - **Two representations.** Methods that can return voided transactions (by id, or lists with
   `includeVoided`) return a `TransactionRecord`: the core transaction together with `voidedAt`,
   `createdAt` and `updatedAt`. Only the effective-ledger boundary returns the bare
@@ -439,16 +424,15 @@ How the boundary is enforced:
 
 ### 9. API semantics
 
-*Approved direction (L7-E).*
+_Approved direction (L7-E)._
 
-| Operation | Route | Semantics |
-| --- | --- | --- |
-| Create | `POST /api/transactions` | One operation of one of the six types; 201 |
-| Read | `GET /api/transactions`, `GET /api/transactions/:id` | Lists leave voided transactions out unless `includeVoided=true`; by id, voided ones are returned too (V8) |
-| Edit | `PUT /api/transactions/:id` | Full replacement of the operation (section 7) |
-| Void | `POST /api/transactions/:id/void` | Sub-resource action (ADR-0003), irreversible (V1), idempotent (V5); no unvoid route (V3) |
-| Delete | none | `DELETE` is 404 `ROUTE_NOT_FOUND` |
-
+| Operation | Route                                                | Semantics                                                                                                 |
+| --------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Create    | `POST /api/transactions`                             | One operation of one of the six types; 201                                                                |
+| Read      | `GET /api/transactions`, `GET /api/transactions/:id` | Lists leave voided transactions out unless `includeVoided=true`; by id, voided ones are returned too (V8) |
+| Edit      | `PUT /api/transactions/:id`                          | Full replacement of the operation (section 7)                                                             |
+| Void      | `POST /api/transactions/:id/void`                    | Sub-resource action (ADR-0003), irreversible (V1), idempotent (V5); no unvoid route (V3)                  |
+| Delete    | none                                                 | `DELETE` is 404 `ROUTE_NOT_FOUND`                                                                         |
 - `PATCH` remains the convention for simple, independent resources (ADR-0003).
 - Transactions use full replacement because their fields, postings, currencies and rate are
   interdependent. A merge would have to rebuild the operation from postings, and would be
@@ -462,8 +446,7 @@ How the boundary is enforced:
 
 ### 10. Opening balances
 
-*Approved direction (L10).*
-
+_Approved direction (L10)._
 - **At most one effective `OPENING_BALANCE` per account:** voided opening balances do not count
   (V7).
 - **Optional:** an account that starts at zero has no opening balance. A zero opening balance is
@@ -481,24 +464,24 @@ How the boundary is enforced:
 
 ### 11. Where the ledger rules live
 
-| Rule | `@solvia/core` | Service | Database |
-| --- | --- | --- | --- |
-| Balanced per currency, ≥ 2 postings, no zero, at most two currencies | ✅ | | integrity test (fact 6) |
-| Account postings in the account's currency, category signs, type rules | ✅ | | |
-| Net-clearing rule and derived rate (5.1) | ✅ | | |
-| Two currencies only for `CONVERSION` and foreign `EXPENSE` (L4b) | ✅ | | |
-| At most one effective opening balance per account (10, V7) | ✅ pure function | loads the effective ledger and runs it in the write transaction | |
-| Account or category exists | ✅ (references) | loads them | FK |
-| No new reference to archived entities (4) | | ✅ | |
-| `id`, `createdAt`, `type` immutable; no-op edits | | ✅ | |
-| Void: irreversible, not editable, idempotent | | ✅ | |
-| Which transactions are effective (non-voided) | unaware | ✅ one read-model boundary | `voided_at` |
-| `*_IN_USE`, `CATEGORY_HAS_CHILDREN` precedence | | ✅ | `RESTRICT` (safety net) |
-| Atomic write | | ✅ owns the transaction | SQLite transaction |
-| Exactly one posting target (L1, L2) | | | structural `CHECK` |
-| System postings only from domain operations (L1) | ✅ factories | requests never carry postings | |
-| Balance, overdraft | ✅ derived | supplies the effective ledger | no column |
-| Money as `bigint`, rates as exact text | ✅ | | `INTEGER` / `TEXT` |
+| Rule                                                                   | `@solvia/core`   | Service                                                         | Database                |
+| ---------------------------------------------------------------------- | ---------------- | --------------------------------------------------------------- | ----------------------- |
+| Balanced per currency, ≥ 2 postings, no zero, at most two currencies   | ✅               |                                                                 | integrity test (fact 6) |
+| Account postings in the account's currency, category signs, type rules | ✅               |                                                                 |                         |
+| Net-clearing rule and derived rate (5.1)                               | ✅               |                                                                 |                         |
+| Two currencies only for `CONVERSION` and foreign `EXPENSE` (L4b)       | ✅               |                                                                 |                         |
+| At most one effective opening balance per account (10, V7)             | ✅ pure function | loads the effective ledger and runs it in the write transaction |                         |
+| Account or category exists                                             | ✅ (references)  | loads them                                                      | FK                      |
+| No new reference to archived entities (4)                              |                  | ✅                                                              |                         |
+| `id`, `createdAt`, `type` immutable; no-op edits                       |                  | ✅                                                              |                         |
+| Void: irreversible, not editable, idempotent                           |                  | ✅                                                              |                         |
+| Which transactions are effective (non-voided)                          | unaware          | ✅ one read-model boundary                                      | `voided_at`             |
+| `*_IN_USE`, `CATEGORY_HAS_CHILDREN` precedence                         |                  | ✅                                                              | `RESTRICT` (safety net) |
+| Atomic write                                                           |                  | ✅ owns the transaction                                         | SQLite transaction      |
+| Exactly one posting target (L1, L2)                                    |                  |                                                                 | structural `CHECK`      |
+| System postings only from domain operations (L1)                       | ✅ factories     | requests never carry postings                                   |                         |
+| Balance, overdraft                                                     | ✅ derived       | supplies the effective ledger                                   | no column               |
+| Money as `bigint`, rates as exact text                                 | ✅               |                                                                 | `INTEGER` / `TEXT`      |
 
 Not delegated to the database, although expressible: the zero sum (a trigger), category signs, the
 currency of account postings (a composite foreign key), and system role values. They are financial
@@ -518,7 +501,7 @@ rules, and the core is their only definition.
 
 ### 13. Migration strategy
 
-*Approved direction (L6).*
+_Approved direction (L6)._
 
 **This strategy is mandatory** for every future migration that rebuilds an SQLite table with
 foreign key dependencies (a table that references others, is referenced, or references itself).
@@ -526,7 +509,6 @@ It must always come with data-bearing migration tests. The runner applies it to 
 authors do not opt in.
 
 **Kinds of migration:**
-
 - **Additive** (no rebuild): `CREATE TABLE`, including foreign keys to existing tables;
   `CREATE INDEX`; `ALTER TABLE … ADD COLUMN`, nullable or with a default. Slice 5's ledger
   migration is additive: it creates `transactions` and `postings` and touches no existing table.
@@ -536,7 +518,6 @@ authors do not opt in.
 
 **The migration runner turns foreign keys off around the transaction and checks them before
 committing.** `migrateDatabase` will:
-
 1. write and verify the backup (unchanged);
 2. `PRAGMA foreign_keys = OFF`, **before** the transaction;
 3. `BEGIN`, apply every pending migration and record it in `__drizzle_migrations` exactly as
@@ -555,7 +536,6 @@ the CI drift check do not change.
 - rely on `defer_foreign_keys` or on `NO ACTION` (fact 4).
 
 **Procedure for migration authors:**
-
 1. Run `npm run db:generate` and read the SQL. If it contains `__new_` or `DROP TABLE`, it is a
    rebuild: say so in the commit.
 2. A migration that touches an existing table gets a test that:
@@ -568,7 +548,7 @@ the CI drift check do not change.
 
 ### 14. Balance dates
 
-*Deferred.*
+_Deferred._
 
 `calculateAccountBalance` ignores transaction dates: it sums every posting it receives, including a
 transaction dated in the future. Slice 5 keeps this behaviour. Whether a balance is "as of today",
@@ -577,28 +557,28 @@ Spend (Phases 5, 8 and 9). No approved rule in slice 5 requires changing it.
 
 ## Alternatives considered
 
-| Topic | Option | Why not |
-| --- | --- | --- |
-| Atomicity | Repositories called in sequence | A failure between calls leaves half a transaction |
-| Atomicity | A repository that opens its own transaction | The service's reads (archived, `*_IN_USE`, uniqueness) would sit outside it |
-| Posting target | Two columns (`account_id`, `category_id`) | Cannot store `SYSTEM` postings |
-| Posting target | `target_id` + `target_kind` without foreign keys | Loses referential integrity |
-| Posting target | One table per target kind | A transaction split across three tables: harder to read in order, edit and test |
-| Delete behaviour | `CASCADE` / `SET NULL` | Erases or orphans financial history |
-| Rate validation | Exactly one clearing posting per currency | Stricter than the current core, which accepts several; the net is what defines the rate |
-| Rate validation | Convert one leg with `convertMoney` and compare | Differs by cents on large amounts, because the rate is rounded from the legs |
-| Transaction rates | Rows in `exchange_rates` with source `TRANSACTION` | Changes slice 4's reporting answers and conflicts with editing |
-| Transaction rates | Two columns (`exchange_rate`, `exchange_rate_recorded_at`) with a both-or-neither `CHECK` | A second timestamp and a second constraint; `updatedAt` already says when the transaction version was recorded |
-| FK safety net | Translate a foreign key violation into 409 | Hides a missing service check behind an expected-looking conflict |
-| Editing | `PATCH` merge | Has to rebuild the operation from its postings; ambiguous; a second validation path |
-| Removing transactions | Physical `DELETE` | Erases facts (BR-02); silently changes past reports and future links (planning, debts, installments) |
-| Removing transactions | No removal at all | A duplicate or a wrong-type entry could never stop counting |
-| Removing transactions | Reversal (BR-61) now | Creates postings, which on an archived account would conflict with section 4; BR-61 stays "Later" |
-| Void | Reversible void, `voidedBy`, `reason` | Silent re-correction (BR-64); a single user; `reason` can be added later |
-| Opening balances | Several per account | Turns them into adjustments, which belong to reconciliation (BR-64) |
-| Opening balances | Mandatory, or required to be the oldest transaction | Contradicts current behaviour (zero is no opening) and adds a temporal rule nothing requires |
-| Migrations | `defer_foreign_keys`, `NO ACTION` | Verified not to help (fact 4) |
-| Migrations | Foreign keys off, check after commit, restore the backup on violation | Works, but a rollback becomes a restore |
+| Topic                 | Option                                                                                    | Why not                                                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Atomicity             | Repositories called in sequence                                                           | A failure between calls leaves half a transaction                                                              |
+| Atomicity             | A repository that opens its own transaction                                               | The service's reads (archived, `*_IN_USE`, uniqueness) would sit outside it                                    |
+| Posting target        | Two columns (`account_id`, `category_id`)                                                 | Cannot store `SYSTEM` postings                                                                                 |
+| Posting target        | `target_id` + `target_kind` without foreign keys                                          | Loses referential integrity                                                                                    |
+| Posting target        | One table per target kind                                                                 | A transaction split across three tables: harder to read in order, edit and test                                |
+| Delete behaviour      | `CASCADE` / `SET NULL`                                                                    | Erases or orphans financial history                                                                            |
+| Rate validation       | Exactly one clearing posting per currency                                                 | Stricter than the current core, which accepts several; the net is what defines the rate                        |
+| Rate validation       | Convert one leg with `convertMoney` and compare                                           | Differs by cents on large amounts, because the rate is rounded from the legs                                   |
+| Transaction rates     | Rows in `exchange_rates` with source `TRANSACTION`                                        | Changes slice 4's reporting answers and conflicts with editing                                                 |
+| Transaction rates     | Two columns (`exchange_rate`, `exchange_rate_recorded_at`) with a both-or-neither `CHECK` | A second timestamp and a second constraint; `updatedAt` already says when the transaction version was recorded |
+| FK safety net         | Translate a foreign key violation into 409                                                | Hides a missing service check behind an expected-looking conflict                                              |
+| Editing               | `PATCH` merge                                                                             | Has to rebuild the operation from its postings; ambiguous; a second validation path                            |
+| Removing transactions | Physical `DELETE`                                                                         | Erases facts (BR-02); silently changes past reports and future links (planning, debts, installments)           |
+| Removing transactions | No removal at all                                                                         | A duplicate or a wrong-type entry could never stop counting                                                    |
+| Removing transactions | Reversal (BR-61) now                                                                      | Creates postings, which on an archived account would conflict with section 4; BR-61 stays "Later"              |
+| Void                  | Reversible void, `voidedBy`, `reason`                                                     | Silent re-correction (BR-64); a single user; `reason` can be added later                                       |
+| Opening balances      | Several per account                                                                       | Turns them into adjustments, which belong to reconciliation (BR-64)                                            |
+| Opening balances      | Mandatory, or required to be the oldest transaction                                       | Contradicts current behaviour (zero is no opening) and adds a temporal rule nothing requires                   |
+| Migrations            | `defer_foreign_keys`, `NO ACTION`                                                         | Verified not to help (fact 4)                                                                                  |
+| Migrations            | Foreign keys off, check after commit, restore the backup on violation                     | Works, but a rollback becomes a restore                                                                        |
 
 ## Consequences
 
@@ -616,15 +596,15 @@ Spend (Phases 5, 8 and 9). No approved rule in slice 5 requires changing it.
 
 ## Deferred concerns
 
-| Concern | Where it belongs |
-| --- | --- |
-| Balances ignore dates (section 14) | Planning, forecast, Available to Spend (Phases 5, 8, 9) |
-| History of edits (who changed what, previous versions) | Phase 12 (audit) |
-| Reversal, refund, cashback (BR-60 to BR-62) | Later |
-| Reconciliation adjustments (BR-64, `ADJUSTMENT`) | After the MVP |
-| Using `TRANSACTION` rates for reporting; reporting in EUR (BR-12) | Phase 8 |
-| SQL aggregation of balances | When needed, equal to the core (ADR-0002) |
-| A `reason` for voids | Additive column, when wanted |
+| Concern                                                           | Where it belongs                                        |
+| ----------------------------------------------------------------- | ------------------------------------------------------- |
+| Balances ignore dates (section 14)                                | Planning, forecast, Available to Spend (Phases 5, 8, 9) |
+| History of edits (who changed what, previous versions)            | Phase 12 (audit)                                        |
+| Reversal, refund, cashback (BR-60 to BR-62)                       | Later                                                   |
+| Reconciliation adjustments (BR-64, `ADJUSTMENT`)                  | After the MVP                                           |
+| Using `TRANSACTION` rates for reporting; reporting in EUR (BR-12) | Phase 8                                                 |
+| SQL aggregation of balances                                       | When needed, equal to the core (ADR-0002)               |
+| A `reason` for voids                                              | Additive column, when wanted                            |
 
 ## Preconditions before slice 5 implementation
 
@@ -642,7 +622,6 @@ Spend (Phases 5, 8 and 9). No approved rule in slice 5 requires changing it.
 ## Consequences for slice 5
 
 **Slice 5 must:**
-
 - **Core:**
   - add the net-clearing rule and the two-currency restriction to `assertValidTransaction`;
   - keep system postings created only by the factories (requests carry operations, never postings);
@@ -677,7 +656,6 @@ Spend (Phases 5, 8 and 9). No approved rule in slice 5 requires changing it.
   - migration on data, and runner rollback.
 
 **Not in slice 5:**
-
 - planning, budgets, statements, installments, debts, goals or reconciliation;
 - reversal, refund and cashback;
 - `ADJUSTMENT`;
@@ -691,22 +669,22 @@ Spend (Phases 5, 8 and 9). No approved rule in slice 5 requires changing it.
 
 ## Decision log
 
-| Id | Decision | Status |
-| --- | --- | --- |
-| L1 | Three mutually exclusive posting targets (`account_id`, `category_id`, `system_role`); `system_role` is internal, created only by domain operations | Approved 2026-10-03 |
-| L2 | Structural `CHECK` constraints allowed; domain and financial invariants stay in the core | Approved 2026-10-03 |
-| L3 | Keep, remove or change archived references; never add one; same rule for accounts and categories; refined BR-23 | Approved 2026-10-01 |
-| L4 | Net-clearing rule; the stored rate equals the rate derived from the nets | Approved 2026-10-01 |
-| L4b | Two currencies only for `CONVERSION` and foreign `EXPENSE` | Approved 2026-10-01 |
-| L5 | One `exchange_rate` column; `exchangeRate.recordedAt === transaction.updatedAt` | Approved 2026-10-03 |
-| L6 | Migration runner: foreign keys off before the transaction, `foreign_key_check` before commit, rollback on violation; mandatory, with data-bearing tests | Approved 2026-10-03 |
-| L7-A | All six transaction types in slice 5 | Approved 2026-10-01 |
-| L7-B | Creation pipeline; integrity test of at least two postings | Approved 2026-10-01 |
-| L7-C | Editing by full replacement; `id`, `createdAt`, `type` immutable | Approved 2026-10-01 |
-| L7-D | No physical delete; void | Approved 2026-10-01 |
-| L7-E | `PUT` full replacement for transactions; `PATCH` stays for simple resources | Approved 2026-10-01 |
-| L9 | Expected conflicts 409; foreign key violation from a defect 500 | Approved 2026-10-03 |
-| L10 | At most one effective opening balance per account, optional, no temporal rule | Approved 2026-10-01 |
-| V1–V8 | Void semantics (section 8) | Approved 2026-10-03 |
-| Effective ledger | Financial calculations consume the effective ledger, never raw records | Approved 2026-10-03 |
-| V9 | Voiding does not change `updatedAt`; `updatedAt` describes the operation, `voidedAt` its lifecycle | Approved 2026-10-03 |
+| Id               | Decision                                                                                                                                                | Status              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| L1               | Three mutually exclusive posting targets (`account_id`, `category_id`, `system_role`); `system_role` is internal, created only by domain operations     | Approved 2026-10-03 |
+| L2               | Structural `CHECK` constraints allowed; domain and financial invariants stay in the core                                                                | Approved 2026-10-03 |
+| L3               | Keep, remove or change archived references; never add one; same rule for accounts and categories; refined BR-23                                         | Approved 2026-10-01 |
+| L4               | Net-clearing rule; the stored rate equals the rate derived from the nets                                                                                | Approved 2026-10-01 |
+| L4b              | Two currencies only for `CONVERSION` and foreign `EXPENSE`                                                                                              | Approved 2026-10-01 |
+| L5               | One `exchange_rate` column; `exchangeRate.recordedAt === transaction.updatedAt`                                                                         | Approved 2026-10-03 |
+| L6               | Migration runner: foreign keys off before the transaction, `foreign_key_check` before commit, rollback on violation; mandatory, with data-bearing tests | Approved 2026-10-03 |
+| L7-A             | All six transaction types in slice 5                                                                                                                    | Approved 2026-10-01 |
+| L7-B             | Creation pipeline; integrity test of at least two postings                                                                                              | Approved 2026-10-01 |
+| L7-C             | Editing by full replacement; `id`, `createdAt`, `type` immutable                                                                                        | Approved 2026-10-01 |
+| L7-D             | No physical delete; void                                                                                                                                | Approved 2026-10-01 |
+| L7-E             | `PUT` full replacement for transactions; `PATCH` stays for simple resources                                                                             | Approved 2026-10-01 |
+| L9               | Expected conflicts 409; foreign key violation from a defect 500                                                                                         | Approved 2026-10-03 |
+| L10              | At most one effective opening balance per account, optional, no temporal rule                                                                           | Approved 2026-10-01 |
+| V1–V8            | Void semantics (section 8)                                                                                                                              | Approved 2026-10-03 |
+| Effective ledger | Financial calculations consume the effective ledger, never raw records                                                                                  | Approved 2026-10-03 |
+| V9               | Voiding does not change `updatedAt`; `updatedAt` describes the operation, `voidedAt` its lifecycle                                                      | Approved 2026-10-03 |
