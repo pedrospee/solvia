@@ -5,7 +5,8 @@ import {
   createTestDatabase,
   type TestDatabase,
 } from "../../infrastructure/database/test-fixtures.ts";
-import { type AppType, createApp } from "../app.ts";
+import type { AppType, createApp } from "../app.ts";
+import { createTestApp } from "../test-fixtures.ts";
 
 let database: TestDatabase;
 let app: ReturnType<typeof createApp>;
@@ -37,7 +38,7 @@ const details = { date: "2026-09-15", description: "Fictitious" };
 
 beforeEach(async () => {
   database = createTestDatabase();
-  app = createApp({ db: database.db });
+  app = createTestApp(database.db);
   ids = {
     bank: await created("/api/accounts", {
       name: "Demo Bank",

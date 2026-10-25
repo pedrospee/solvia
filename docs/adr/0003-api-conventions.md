@@ -14,7 +14,9 @@ financial core.
 
 ### Routes and layers
 
-- Every route is under `/api/`, JSON only. The server binds to `127.0.0.1`.
+- Every route is under `/api/`, JSON only. The server binds to `127.0.0.1` and answers only
+  requests addressed to its own host and, for changes, from its own origin (`local-request-guard.ts`,
+  docs/security.md).
 - `routes → services → @solvia/core → repositories → SQLite`. Routes validate input and map
   results; services orchestrate and call the core; repositories only persist. No financial rule
   lives in a route, service or repository.
@@ -115,13 +117,14 @@ Services do not know HTTP. They throw `DomainError` (from the core) or applicati
 a code but no status, `NotFoundError` (404) and `ConflictError` (409) in
 `backend/src/modules/errors.ts`; the error handler maps them to statuses. `ApiError`, which carries a status, is raised only by the HTTP layer.
 
-| Status | When                                                              | Codes                                                                                                                                                                                                                      |
-| ------ | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | The request does not match the contract, or the body is malformed | `VALIDATION_FAILED` (Zod issues in `details`), `INVALID_REQUEST`, `INVALID_CURSOR`                                                                                                                                         |
-| 404    | A resource, or a referenced resource, does not exist              | `ROUTE_NOT_FOUND`, `<ENTITY>_NOT_FOUND` (e.g. `ACCOUNT_NOT_FOUND`)                                                                                                                                                         |
-| 409    | The request conflicts with the current state                      | e.g. `ACCOUNT_IN_USE`, `ACCOUNT_ARCHIVED`, `CATEGORY_IN_USE`, `CATEGORY_ARCHIVED`, `CATEGORY_HAS_CHILDREN`, `CATEGORY_HAS_ACTIVE_CHILDREN`, `CATEGORY_PARENT_ARCHIVED`, `TRANSACTION_VOIDED`, `TRANSACTION_TYPE_IMMUTABLE` |
-| 422    | A financial rule was violated (`DomainError`)                     | The core's code, e.g. `UNBALANCED_TRANSACTION`                                                                                                                                                                             |
-| 500    | Anything unexpected                                               | `INTERNAL_ERROR`, generic message                                                                                                                                                                                          |
+| Status | When                                                               | Codes                                                                                                                                                                                                                      |
+| ------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | The request does not match the contract, or the body is malformed  | `VALIDATION_FAILED` (Zod issues in `details`), `INVALID_REQUEST`, `INVALID_CURSOR`                                                                                                                                         |
+| 403    | The request does not come from the local server (docs/security.md) | `HOST_NOT_ALLOWED`, `ORIGIN_NOT_ALLOWED`                                                                                                                                                                                   |
+| 404    | A resource, or a referenced resource, does not exist               | `ROUTE_NOT_FOUND`, `<ENTITY>_NOT_FOUND` (e.g. `ACCOUNT_NOT_FOUND`)                                                                                                                                                         |
+| 409    | The request conflicts with the current state                       | e.g. `ACCOUNT_IN_USE`, `ACCOUNT_ARCHIVED`, `CATEGORY_IN_USE`, `CATEGORY_ARCHIVED`, `CATEGORY_HAS_CHILDREN`, `CATEGORY_HAS_ACTIVE_CHILDREN`, `CATEGORY_PARENT_ARCHIVED`, `TRANSACTION_VOIDED`, `TRANSACTION_TYPE_IMMUTABLE` |
+| 422    | A financial rule was violated (`DomainError`)                      | The core's code, e.g. `UNBALANCED_TRANSACTION`                                                                                                                                                                             |
+| 500    | Anything unexpected                                                | `INTERNAL_ERROR`, generic message                                                                                                                                                                                          |
 
 A 500 is logged on the server and exposes nothing: no stack trace, SQL, file path or internal
 detail. Unknown errors are never turned into a 400.

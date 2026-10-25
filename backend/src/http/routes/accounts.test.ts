@@ -5,7 +5,8 @@ import {
   createTestDatabase,
   type TestDatabase,
 } from "../../infrastructure/database/test-fixtures.ts";
-import { type AppType, createApp } from "../app.ts";
+import type { AppType, createApp } from "../app.ts";
+import { createTestApp } from "../test-fixtures.ts";
 
 const ABOVE_MAX_SAFE_INTEGER = "90071992547409930";
 
@@ -14,7 +15,7 @@ let app: ReturnType<typeof createApp>;
 
 beforeEach(() => {
   database = createTestDatabase();
-  app = createApp({ db: database.db });
+  app = createTestApp(database.db);
 });
 
 afterEach(() => {
