@@ -1,6 +1,6 @@
 import { type Account, createMoney } from "@solvia/core";
 import { asc, eq, isNull } from "drizzle-orm";
-import type { AppDatabase } from "../../infrastructure/database/client.ts";
+import type { DbExecutor } from "../../infrastructure/database/client.ts";
 import { accounts } from "../../infrastructure/database/schema/accounts.ts";
 
 /** An account as persisted: the core Account plus its lifecycle timestamps. */
@@ -15,7 +15,7 @@ type AccountRow = typeof accounts.$inferSelect;
 
 export type AccountRepository = ReturnType<typeof createAccountRepository>;
 
-export function createAccountRepository(db: AppDatabase) {
+export function createAccountRepository(db: DbExecutor) {
   return {
     insert(record: AccountRecord): void {
       db.insert(accounts).values(toRow(record)).run();

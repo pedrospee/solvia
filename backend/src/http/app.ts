@@ -1,8 +1,6 @@
 import { Hono } from "hono";
 import type { AppDatabase } from "../infrastructure/database/client.ts";
-import { createAccountRepository } from "../modules/accounts/account-repository.ts";
 import { createAccountService } from "../modules/accounts/account-service.ts";
-import { createCategoryRepository } from "../modules/categories/category-repository.ts";
 import { createCategoryService } from "../modules/categories/category-service.ts";
 import { createExchangeRateRepository } from "../modules/exchange-rates/exchange-rate-repository.ts";
 import { createExchangeRateService } from "../modules/exchange-rates/exchange-rate-service.ts";
@@ -20,8 +18,8 @@ export type AppDependencies = Readonly<{ db: AppDatabase }>;
  * the job of main.ts, so tests call `app.request()` directly.
  */
 export function createApp({ db }: AppDependencies) {
-  const accountService = createAccountService(createAccountRepository(db));
-  const categoryService = createCategoryService(createCategoryRepository(db));
+  const accountService = createAccountService(db);
+  const categoryService = createCategoryService(db);
   const exchangeRateService = createExchangeRateService(createExchangeRateRepository(db));
 
   const app = new Hono()

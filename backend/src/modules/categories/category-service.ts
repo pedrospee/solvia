@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { assertValidCategoryHierarchy, type Category, createCategory } from "@solvia/core";
+import type { AppDatabase } from "../../infrastructure/database/client.ts";
 import { ConflictError, NotFoundError } from "../errors.ts";
-import type { CategoryRecord, CategoryRepository } from "./category-repository.ts";
+import { createTransactionRepository } from "../transactions/transaction-repository.ts";
+import {
+  type CategoryRecord,
+  type CategoryRepository,
+  createCategoryRepository,
+} from "./category-repository.ts";
 
 export type NewCategory = Omit<Category, "id">;
 
@@ -17,9 +23,10 @@ export type CategoryService = ReturnType<typeof createCategoryService>;
  * nothing is deleted in cascade.
  */
 export function createCategoryService(
-  repository: CategoryRepository,
+  db: AppDatabase,
   options: { now?: () => Date; newId?: () => string } = {},
 ) {
+  const repository = createCategoryRepository(db);
   const now = () => (options.now ?? (() => new Date()))().toISOString();
   const newId = options.newId ?? randomUUID;
 
@@ -50,8 +57,8 @@ export function createCategoryService(
     assertValidCategoryHierarchy([...others, category]);
   }
 
-  function children(id: string): CategoryRecord[] {
-    return repository
+  function children(id: string, categories: CategoryRepository = repository): CategoryRecord[] {
+    return categories
       .list({ includeArchived: true })
       .filter(({ category }) => category.parentId === id);
   }
@@ -118,18 +125,33 @@ export function createCategoryService(
     },
 
     /**
-     * Deletes a category nothing depends on. Children take precedence over postings
-     * (CATEGORY_IN_USE, checked once postings are persisted).
+     * Deletes a category nothing depends on, checked and deleted in one database
+     * transaction. Children take precedence over postings; postings of voided
+     * transactions count, because they are kept (CATEGORY_IN_USE, ADR-0004 L9).
      */
     delete(id: string): void {
-      load(id);
-      if (children(id).length > 0) {
-        throw new ConflictError(
-          "CATEGORY_HAS_CHILDREN",
-          "A category with child categories cannot be deleted.",
-        );
-      }
-      repository.delete(id);
+      db.transaction(
+        (tx) => {
+          const categories = createCategoryRepository(tx);
+          if (categories.findById(id) === undefined) {
+            throw new NotFoundError("CATEGORY_NOT_FOUND", `No category with id "${id}".`);
+          }
+          if (children(id, categories).length > 0) {
+            throw new ConflictError(
+              "CATEGORY_HAS_CHILDREN",
+              "A category with child categories cannot be deleted.",
+            );
+          }
+          if (createTransactionRepository(tx).isCategoryReferenced(id)) {
+            throw new ConflictError(
+              "CATEGORY_IN_USE",
+              "The category has transactions, so it cannot be deleted; archive it instead.",
+            );
+          }
+          categories.delete(id);
+        },
+        { behavior: "immediate" },
+      );
     },
   };
 }

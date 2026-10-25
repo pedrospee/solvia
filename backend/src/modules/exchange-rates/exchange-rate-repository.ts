@@ -1,6 +1,6 @@
 import type { ExchangeRate } from "@solvia/core";
 import { asc, eq, max } from "drizzle-orm";
-import type { AppDatabase } from "../../infrastructure/database/client.ts";
+import type { DbExecutor } from "../../infrastructure/database/client.ts";
 import { exchangeRates } from "../../infrastructure/database/schema/exchange-rates.ts";
 
 /** A rate as persisted: the core ExchangeRate plus its id. */
@@ -11,7 +11,7 @@ type ExchangeRateRow = typeof exchangeRates.$inferSelect;
 export type ExchangeRateRepository = ReturnType<typeof createExchangeRateRepository>;
 
 /** Append-only (BR-81): there is deliberately no update and no delete. */
-export function createExchangeRateRepository(db: AppDatabase) {
+export function createExchangeRateRepository(db: DbExecutor) {
   return {
     insert(record: ExchangeRateRecord): void {
       db.insert(exchangeRates).values(toRow(record)).run();
