@@ -161,7 +161,9 @@ describe("GET /api/transactions", () => {
     };
 
     expect(effective).toEqual({ items: [kept] });
-    expect(all.items.map(({ id }) => id)).toEqual([kept.id, voided.id]);
+    // Both are created in the same instant on the real clock, so their order is decided
+    // by their random ids: only membership is asserted here.
+    expect(all.items.map(({ id }) => id).sort()).toEqual([kept.id, voided.id].sort());
     expect(await errorOf(await app.request("/api/transactions/missing"))).toEqual([
       404,
       "TRANSACTION_NOT_FOUND",
