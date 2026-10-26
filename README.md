@@ -41,7 +41,7 @@ Spreadsheets become hard to maintain as financial complexity grows. I wanted a s
 
 ## Project status
 
-Early development. The financial core and the backend (SQLite persistence, HTTP API, backup, restore and export) exist; Phase 2B is complete (see [architecture.md](docs/architecture.md#phase-2b-slices)). There is no user interface yet: it comes in Phase 2C.
+Early development. The financial core and the backend (SQLite persistence, HTTP API, backup, restore and export) exist; Phase 2B is complete (see [architecture.md](docs/architecture.md#phase-2b-slices)). There is no user interface yet: it comes in Phase 2C, planned in [ADR-0005](docs/adr/0005-minimal-frontend.md).
 
 | Phase | Scope                                                                                                                      | Status  |
 | ----- | -------------------------------------------------------------------------------------------------------------------------- | ------- |

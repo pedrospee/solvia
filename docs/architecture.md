@@ -27,15 +27,15 @@ core / domain (pure rules)  ←  application (use cases)  ←  infrastructure (D
 
 Dependencies point inward only. The repository is an npm workspaces monorepo ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md)), and the workspaces make the layers visible:
 
-| Workspace             | Package             | Layers                            | Depends on                                                                       |
-| --------------------- | ------------------- | --------------------------------- | -------------------------------------------------------------------------------- |
-| `packages/core`       | `@solvia/core`      | core                              | nothing (no runtime dependencies, no Node types)                                 |
-| `packages/contracts`  | `@solvia/contracts` | API JSON schemas                  | Zod only (no core, no Node types)                                                |
-| `backend`             | `@solvia/backend`   | application, infrastructure, http | `@solvia/core`, `@solvia/contracts`, Hono, Drizzle, better-sqlite3, Zod          |
-| `frontend` (Phase 2C) | —                   | web                               | `@solvia/contracts`; `AppType` as a type-only import, never backend runtime code |
+| Workspace             | Package             | Layers                            | Depends on                                                                                                                                                               |
+| --------------------- | ------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/core`       | `@solvia/core`      | core                              | nothing (no runtime dependencies, no Node types)                                                                                                                         |
+| `packages/contracts`  | `@solvia/contracts` | API JSON schemas                  | Zod only (no core, no Node types)                                                                                                                                        |
+| `backend`             | `@solvia/backend`   | application, infrastructure, http | `@solvia/core`, `@solvia/contracts`, Hono, Drizzle, better-sqlite3, Zod                                                                                                  |
+| `frontend` (Phase 2C) | `@solvia/frontend`  | web                               | `@solvia/contracts`; only the money and date helpers of `@solvia/core`; `AppType` as a type-only import, never backend runtime code; React, TanStack Query, React Router |
 
 Other workspaces import the core only as `@solvia/core` (its `src/index.ts`), never through deep paths.
-Persistence: [ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md). API conventions: [ADR-0003](adr/0003-api-conventions.md).
+Persistence: [ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md). API conventions: [ADR-0003](adr/0003-api-conventions.md). Frontend: [ADR-0005](adr/0005-minimal-frontend.md).
 
 ## Ledger model: internal double-entry
 
@@ -103,19 +103,19 @@ From Phase 2C: `frontend/`.
 
 ## Stack
 
-| Area         | Choice                                              | Why                                                                                                         |
-| ------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Runtime      | Node.js 24 LTS                                      | Long-term support; runs TypeScript natively (type stripping)                                                |
-| Language     | TypeScript `strict` + `noUncheckedIndexedAccess`    | Errors caught at compile time                                                                               |
-| Money        | `bigint` minor units, decimal strings for rates     | Never floating point                                                                                        |
-| Validation   | Zod                                                 | External input and configuration                                                                            |
-| Tests / lint | Vitest / Biome                                      | Fast, minimal configuration; one root config for every workspace                                            |
-| Repository   | npm workspaces                                      | Explicit package boundaries without extra tools ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md))      |
-| CI           | GitHub Actions, Dependabot                          | `npm run check` and Gitleaks on every push and pull request                                                 |
-| Database     | SQLite + Drizzle + better-sqlite3                   | Local file, ACID, typed, versioned migrations ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md)) |
-| API          | Hono + `@solvia/contracts` (Zod)                    | Small, typed RPC client, shared schemas ([ADR-0003](adr/0003-api-conventions.md))                           |
-| UI           | React + Vite                                        | Introduced with the minimal UI                                                                              |
-| Secrets      | `.env`, Gitleaks pre-commit, GitHub push protection | See [security.md](security.md)                                                                              |
+| Area         | Choice                                                  | Why                                                                                                         |
+| ------------ | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Runtime      | Node.js 24 LTS                                          | Long-term support; runs TypeScript natively (type stripping)                                                |
+| Language     | TypeScript `strict` + `noUncheckedIndexedAccess`        | Errors caught at compile time                                                                               |
+| Money        | `bigint` minor units, decimal strings for rates         | Never floating point                                                                                        |
+| Validation   | Zod                                                     | External input and configuration                                                                            |
+| Tests / lint | Vitest / Biome                                          | Fast, minimal configuration; one root config for every workspace                                            |
+| Repository   | npm workspaces                                          | Explicit package boundaries without extra tools ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md))      |
+| CI           | GitHub Actions, Dependabot                              | `npm run check` and Gitleaks on every push and pull request                                                 |
+| Database     | SQLite + Drizzle + better-sqlite3                       | Local file, ACID, typed, versioned migrations ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.md)) |
+| API          | Hono + `@solvia/contracts` (Zod)                        | Small, typed RPC client, shared schemas ([ADR-0003](adr/0003-api-conventions.md))                           |
+| UI           | React + Vite, TanStack Query, React Router, CSS Modules | Minimal UI in Brazilian Portuguese, on the API's own origin ([ADR-0005](adr/0005-minimal-frontend.md))      |
+| Secrets      | `.env`, Gitleaks pre-commit, GitHub push protection     | See [security.md](security.md)                                                                              |
 
 No dependency is added without a documented reason.
 
@@ -152,5 +152,21 @@ Phase 2B is delivered in slices, each merged into `main` before the next one sta
 | 4     | Manual exchange rates (BR-80 to BR-83)                                               | ✅ Done |
 | 5     | Transactions and postings; `ACCOUNT_IN_USE`, `CATEGORY_IN_USE`; balances in the API  | ✅ Done |
 | 6     | Manual backup, restore and JSON export                                               | ✅ Done |
+
+### Phase 2C slices
+
+Phase 2C is delivered in slices, each merged into `main` before the next one starts ([ADR-0005](adr/0005-minimal-frontend.md#slices)).
+
+| Slice | Scope                                                                           | Status |
+| ----- | ------------------------------------------------------------------------------- | ------ |
+| 0     | Housekeeping: lint warning, patch updates, request body limit                   |        |
+| 1     | Frontend skeleton, development origin allowed only in development, typed client |        |
+| 2     | App shell and accounts                                                          |        |
+| 3     | Categories                                                                      |        |
+| 4     | Manual exchange rates                                                           |        |
+| 5     | Transactions: list and details                                                  |        |
+| 6     | Transactions: single-currency operations, edit and void                         |        |
+| 7     | Transactions: two-currency operations                                           |        |
+| 8     | Daily use: the backend serves the built UI on one origin                        |        |
 
 After the MVP (phases 0–3): **reconciliation**, then **CSV import** (preview, validation, column mapping, duplicate detection, confirmation, idempotent re-import).
