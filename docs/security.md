@@ -53,6 +53,7 @@ real database files, backups or exports.
 | Environment validated at startup; the app refuses to start on invalid config                                                                  | `backend/src/infrastructure/config/environment.ts`  |
 | API errors never expose stack traces, SQL, file paths or internal details (500 is generic and logged)                                         | `backend/src/http/error-handler.ts`                 |
 | Only the local server's `Host`; changes only from its `Origin` (DNS rebinding, CSRF)                                                          | `backend/src/http/local-request-guard.ts`           |
+| Request bodies limited to 1 MB (413 `PAYLOAD_TOO_LARGE`), so no request can hold the server's memory                                          | `backend/src/http/app.ts`                           |
 | Gitleaks scans staged changes before every commit; the commit is blocked if Gitleaks is missing                                               | `.githooks/pre-commit`, enabled by `npm install`    |
 | Full-history scan on demand                                                                                                                   | `npm run secrets:scan`                              |
 | Gitleaks scan on every push and pull request to `main`                                                                                        | `.github/workflows/ci.yml`                          |

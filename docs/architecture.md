@@ -157,16 +157,16 @@ Phase 2B is delivered in slices, each merged into `main` before the next one sta
 
 Phase 2C is delivered in slices, each merged into `main` before the next one starts ([ADR-0005](adr/0005-minimal-frontend.md#slices)).
 
-| Slice | Scope                                                                           | Status |
-| ----- | ------------------------------------------------------------------------------- | ------ |
-| 0     | Housekeeping: lint warning, patch updates, request body limit                   |        |
-| 1     | Frontend skeleton, development origin allowed only in development, typed client |        |
-| 2     | App shell and accounts                                                          |        |
-| 3     | Categories                                                                      |        |
-| 4     | Manual exchange rates                                                           |        |
-| 5     | Transactions: list and details                                                  |        |
-| 6     | Transactions: single-currency operations, edit and void                         |        |
-| 7     | Transactions: two-currency operations                                           |        |
-| 8     | Daily use: the backend serves the built UI on one origin                        |        |
+| Slice | Scope                                                                           | Status  |
+| ----- | ------------------------------------------------------------------------------- | ------- |
+| 0     | Housekeeping: lint warning, patch updates, request body limit                   | ✅ Done |
+| 1     | Frontend skeleton, development origin allowed only in development, typed client |         |
+| 2     | App shell and accounts                                                          |         |
+| 3     | Categories                                                                      |         |
+| 4     | Manual exchange rates                                                           |         |
+| 5     | Transactions: list and details                                                  |         |
+| 6     | Transactions: single-currency operations, edit and void                         |         |
+| 7     | Transactions: two-currency operations                                           |         |
+| 8     | Daily use: the backend serves the built UI on one origin                        |         |
 
 After the MVP (phases 0–3): **reconciliation**, then **CSV import** (preview, validation, column mapping, duplicate detection, confirmation, idempotent re-import).

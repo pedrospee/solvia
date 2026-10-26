@@ -7,17 +7,17 @@ import { ConflictError, NotFoundError } from "../modules/errors.ts";
 
 /**
  * An application failure with a stable code: invalid input (400), a request from
- * outside the local server (403), a missing resource (404) or a conflict with the
- * current state (409). Financial rule
+ * outside the local server (403), a missing resource (404), a conflict with the
+ * current state (409) or a body over the size limit (413). Financial rule
  * violations are DomainErrors from @solvia/core instead (422).
  */
 export class ApiError extends Error {
-  readonly status: 400 | 403 | 404 | 409;
+  readonly status: 400 | 403 | 404 | 409 | 413;
   readonly code: string;
   readonly details: Record<string, unknown> | undefined;
 
   constructor(
-    status: 400 | 403 | 404 | 409,
+    status: 400 | 403 | 404 | 409 | 413,
     code: string,
     message: string,
     details?: Record<string, unknown>,
