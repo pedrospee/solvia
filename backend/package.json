@@ -19,12 +19,12 @@
     "data:export": "node --env-file-if-exists=../.env src/scripts/data-export.ts"
   },
   "dependencies": {
-    "@hono/node-server": "2.1.4",
+    "@hono/node-server": "2.1.5",
     "@solvia/contracts": "*",
     "@solvia/core": "*",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.4",
-    "hono": "4.13.13",
+    "hono": "4.13.14",
     "zod": "4.6.7"
   },
   "devDependencies": {
