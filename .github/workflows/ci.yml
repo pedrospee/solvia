@@ -32,6 +32,9 @@ jobs:
 
       - run: npm run check
 
+      # The backend's compiled output and the UI's Vite bundle: a broken build fails here.
+      - run: npm run build
+
       # `drizzle-kit check` only validates the migration files among themselves, so drift is
       # detected by generating: a schema change without a committed migration produces new files.
       - name: Check that committed migrations match the schema

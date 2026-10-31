@@ -5,7 +5,8 @@
   "description": "Solvia application: HTTP API, use cases and SQLite persistence.",
   "type": "module",
   "exports": {
-    "./rpc": "./src/http/rpc.ts"
+    "./rpc": "./src/http/rpc.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {
     "dev": "node --watch --env-file-if-exists=../.env src/main.ts",

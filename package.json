@@ -9,10 +9,13 @@
   },
   "workspaces": [
     "packages/*",
-    "backend"
+    "backend",
+    "frontend"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@solvia/backend",
+    "dev": "node scripts/dev.ts",
+    "dev:api": "npm run dev --workspace=@solvia/backend",
+    "dev:ui": "npm run dev --workspace=@solvia/frontend",
     "start": "npm run start --workspace=@solvia/backend",
     "db:generate": "npm run db:generate --workspace=@solvia/backend",
     "db:migrate": "npm run db:migrate --workspace=@solvia/backend",
