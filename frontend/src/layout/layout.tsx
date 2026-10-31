@@ -11,6 +11,7 @@ export function Layout() {
         <p className={styles.brand}>{texts.appName}</p>
         <nav aria-label={texts.navigation} className={styles.nav}>
           <NavLink to="/contas">{texts.accounts}</NavLink>
+          <NavLink to="/categorias">{texts.categories}</NavLink>
         </nav>
         <div className={styles.status}>
           <ApiStatus />

@@ -17,6 +17,16 @@ const messages: Readonly<Record<string, string>> = {
   ACCOUNT_NOT_FOUND: "Conta não encontrada. Ela pode ter sido excluída.",
   ACCOUNT_IN_USE:
     "Esta conta tem transações e não pode ser excluída. Arquive-a: ela sai da lista e o histórico é mantido.",
+  CATEGORY_NOT_FOUND: "Categoria não encontrada. Ela pode ter sido excluída.",
+  CATEGORY_IN_USE:
+    "Esta categoria tem transações e não pode ser excluída. Arquive-a: ela deixa de ser oferecida e o histórico é mantido.",
+  CATEGORY_HAS_CHILDREN:
+    "Esta categoria tem subcategorias e não pode ser excluída. Exclua ou mova as subcategorias antes.",
+  CATEGORY_HAS_ACTIVE_CHILDREN: "Arquive as subcategorias antes de arquivar a categoria principal.",
+  CATEGORY_PARENT_ARCHIVED:
+    "A categoria principal está arquivada. Desarquive-a antes, ou escolha outra.",
+  INVALID_CATEGORY:
+    "A categoria não foi aceita. Confira o nome e a categoria principal: ela precisa ser do mesmo tipo e não pode ser uma subcategoria.",
   INVALID_ACCOUNT:
     "A conta não foi aceita. Confira o nome e o limite do cheque especial: ele só vale para contas bancárias e deve ser maior que zero.",
 };
