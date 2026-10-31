@@ -94,12 +94,19 @@ backend/                      @solvia/backend
     │   └── files/            private files and directories (600 / 700)
     ├── scripts/              db:migrate, db:backup, db:restore, data:export
     └── main.ts               bootstrap: checks the database, serves on 127.0.0.1
+frontend/                     @solvia/frontend
+├── index.html                the page Vite serves and builds (lang pt-BR)
+├── vite.config.ts            React plugin; dev server on 127.0.0.1:5173 with the /api proxy
+└── src/
+    ├── api/                  typed client (hc<AppType>), callApi and ApiRequestError, ApiProvider
+    ├── health/               API status (GET /api/health)
+    ├── app.tsx, main.tsx     the app and its bootstrap (TanStack Query, API client)
+    └── test-fixtures.tsx     the real API in process, for tests only
+scripts/dev.ts                npm run dev: API and UI together
 docs/adr/                     architecture decision records
 ```
 
 Root: shared configuration (`tsconfig.base.json`, `biome.json`, `vitest.config.ts`), CI in `.github/`.
-
-From Phase 2C: `frontend/`.
 
 ## Stack
 
@@ -128,7 +135,7 @@ No dependency is added without a documented reason.
 | 2     | Persistence, accounts, transactions, manual rates, backup/export, minimal UI | In progress |
 | 2A    | Monorepo with npm workspaces, CI                                             | ✅ Done     |
 | 2B    | Backend: Hono, Drizzle, SQLite, shared contracts, ledger, backup and export  | ✅ Done     |
-| 2C    | Frontend: React + Vite                                                       |             |
+| 2C    | Frontend: React + Vite                                                       | In progress |
 | 3     | Debt management                                                              |             |
 | 4     | Credit cards: statements, installments                                       |             |
 | 5     | Planning and budget                                                          |             |
@@ -160,7 +167,7 @@ Phase 2C is delivered in slices, each merged into `main` before the next one sta
 | Slice | Scope                                                                           | Status  |
 | ----- | ------------------------------------------------------------------------------- | ------- |
 | 0     | Housekeeping: lint warning, patch updates, request body limit                   | ✅ Done |
-| 1     | Frontend skeleton, development origin allowed only in development, typed client |         |
+| 1     | Frontend skeleton, development origin allowed only in development, typed client | ✅ Done |
 | 2     | App shell and accounts                                                          |         |
 | 3     | Categories                                                                      |         |
 | 4     | Manual exchange rates                                                           |         |

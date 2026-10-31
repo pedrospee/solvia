@@ -22,8 +22,14 @@ can try to reach the API, so the server checks every request (`backend/src/http/
   (`Content-Type` check, ADR-0003), which a cross-site form cannot send.
 - **No CORS headers.** The API never sends `Access-Control-Allow-*`, so a page from another origin
   cannot read any answer.
-- **The UI (Phase 2C)** must reach the API from the server's own origin, for example through the
-  Vite dev server's proxy, or its origin must be added deliberately, with a test.
+- **The UI in development** is served by Vite on `127.0.0.1:5173`, which proxies `/api` to the API
+  with the API's `Host`. The browser's `Origin` is forwarded unchanged: rewriting it in the proxy
+  would let any site through the dev server. Instead the API accepts `http://127.0.0.1:5173` and
+  `http://localhost:5173` **only when `NODE_ENV=development`** (`devUiOrigins`, tested in
+  `local-request-guard.test.ts`); in production that origin is a 403 like any other. Vite listens
+  on the loopback address only and keeps its own `Host` check
+  ([ADR-0005](adr/0005-minimal-frontend.md), D2).
+- **The UI for daily use** will be served by the API itself, on its own origin (Phase 2C, slice 8).
 
 ## Data
 
@@ -53,6 +59,7 @@ real database files, backups or exports.
 | Environment validated at startup; the app refuses to start on invalid config                                                                  | `backend/src/infrastructure/config/environment.ts`  |
 | API errors never expose stack traces, SQL, file paths or internal details (500 is generic and logged)                                         | `backend/src/http/error-handler.ts`                 |
 | Only the local server's `Host`; changes only from its `Origin` (DNS rebinding, CSRF)                                                          | `backend/src/http/local-request-guard.ts`           |
+| The UI's code cannot import backend code, Node modules or `process`; only tests run the backend (Biome rules on `frontend/src`)               | `biome.json`                                        |
 | Request bodies limited to 1 MB (413 `PAYLOAD_TOO_LARGE`), so no request can hold the server's memory                                          | `backend/src/http/app.ts`                           |
 | Gitleaks scans staged changes before every commit; the commit is blocked if Gitleaks is missing                                               | `.githooks/pre-commit`, enabled by `npm install`    |
 | Full-history scan on demand                                                                                                                   | `npm run secrets:scan`                              |

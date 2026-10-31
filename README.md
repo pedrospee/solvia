@@ -41,7 +41,7 @@ Spreadsheets become hard to maintain as financial complexity grows. I wanted a s
 
 ## Project status
 
-Early development. The financial core and the backend (SQLite persistence, HTTP API, backup, restore and export) exist; Phase 2B is complete (see [architecture.md](docs/architecture.md#phase-2b-slices)). There is no user interface yet: it comes in Phase 2C, planned in [ADR-0005](docs/adr/0005-minimal-frontend.md).
+Early development. The financial core and the backend (SQLite persistence, HTTP API, backup, restore and export) exist; Phase 2B is complete (see [architecture.md](docs/architecture.md#phase-2b-slices)). The user interface is being built in Phase 2C ([ADR-0005](docs/adr/0005-minimal-frontend.md)): so far it only shows whether it reaches the API.
 
 | Phase | Scope                                                                                                                      | Status  |
 | ----- | -------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -75,7 +75,7 @@ npm run check        # typecheck + lint + tests, every workspace
 cp .env.example .env # set DATABASE_PATH and BACKUP_DIR (outside the repository)
 npm run db:migrate   # create or update the database
 npm run db:backup    # a verified backup; see docs/development.md for restore and export
-npm run dev          # API on http://127.0.0.1:3000, restarting on change
+npm run dev          # API on http://127.0.0.1:3000 and UI on http://127.0.0.1:5173
 ```
 
 ## Repository structure
@@ -86,14 +86,15 @@ An npm workspaces monorepo ([ADR-0001](docs/adr/0001-monorepo-with-npm-workspace
 packages/core        @solvia/core        pure financial core: money, exchange rates, ledger
 packages/contracts   @solvia/contracts   Zod schemas of the API's JSON
 backend              @solvia/backend     HTTP API (Hono) and SQLite persistence (Drizzle)
+frontend             @solvia/frontend    React UI (Vite), in progress (Phase 2C)
 docs            requirements, rules, architecture and decision records
 ```
 
 ## Tech stack
 
-| In use                                                                                                                   | Planned                 |
-| ------------------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| Node.js 24, TypeScript (strict), npm workspaces, Zod, Vitest, Biome, Gitleaks, GitHub Actions, SQLite, Drizzle ORM, Hono | React + Vite (Phase 2C) |
+| In use                                                                                                                                                | Planned                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Node.js 24, TypeScript (strict), npm workspaces, Zod, Vitest, Biome, Gitleaks, GitHub Actions, SQLite, Drizzle ORM, Hono, React, Vite, TanStack Query | React Router (Phase 2C) |
 
 ## Important note
 
