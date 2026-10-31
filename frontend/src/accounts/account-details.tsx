@@ -2,12 +2,14 @@ import { type AccountResponse, updateAccountRequestSchema } from "@solvia/contra
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ApiRequestError, callApi } from "../api/call-api.ts";
+import { useApiMutation } from "../api/use-api-mutation.ts";
 import { formatTimestampDate } from "../format/date.ts";
 import { ErrorAlert } from "../ui/error-alert.tsx";
+import { LifecycleSection } from "../ui/lifecycle-section.tsx";
 import ui from "../ui/ui.module.css";
 import { AccountBalance } from "./account-balance.tsx";
 import { AccountForm, type AccountFormValues } from "./account-form.tsx";
-import { isLiability, useAccount, useAccountMutation } from "./account-queries.ts";
+import { accountKeys, isLiability, useAccount } from "./account-queries.ts";
 import styles from "./accounts.module.css";
 import { kindLabels, texts } from "./texts.ts";
 
@@ -29,7 +31,7 @@ export function AccountDetails() {
 
 function AccountPage({ account }: { account: AccountResponse }) {
   const [saved, setSaved] = useState(false);
-  const update = useAccountMutation((api, values: AccountFormValues) => {
+  const update = useApiMutation(accountKeys.all, (api, values: AccountFormValues) => {
     const request = updateAccountRequestSchema.safeParse({
       name: values.name,
       institution: values.institution === "" ? null : values.institution,
@@ -55,14 +57,14 @@ function AccountPage({ account }: { account: AccountResponse }) {
         <p role="note">{texts.details.archivedOn(formatTimestampDate(account.archivedAt))}</p>
       )}
 
-      <section className={styles.section}>
+      <section className={ui.section}>
         <h2>{isLiability(account.kind) ? texts.details.owedTitle : texts.details.balanceTitle}</h2>
         <div className={styles.summary}>
           <AccountBalance accountId={account.id} />
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section className={ui.section}>
         <h2>{texts.details.editTitle}</h2>
         <ErrorAlert error={update.error} />
         {saved && <p role="status">{texts.details.saved}</p>}
@@ -94,65 +96,26 @@ function AccountPage({ account }: { account: AccountResponse }) {
 
 function Lifecycle({ account }: { account: AccountResponse }) {
   const navigate = useNavigate();
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const archived = account.archivedAt !== null;
-
-  const toggleArchive = useAccountMutation((api) => {
-    const param = { param: { id: account.id } };
-    return callApi(
+  const param = { param: { id: account.id } };
+  const toggleArchive = useApiMutation(accountKeys.all, (api) =>
+    callApi(
       archived
         ? api.api.accounts[":id"].unarchive.$post(param)
         : api.api.accounts[":id"].archive.$post(param),
-    );
-  });
-  const remove = useAccountMutation((api) =>
-    callApi(api.api.accounts[":id"].$delete({ param: { id: account.id } })),
+    ),
+  );
+  const remove = useApiMutation(accountKeys.all, (api) =>
+    callApi(api.api.accounts[":id"].$delete(param)),
   );
 
   return (
-    <section className={styles.section}>
-      <h2>{texts.details.lifecycleTitle}</h2>
-      <p className={ui.notice}>{texts.details.archiveHint}</p>
-      <ErrorAlert error={toggleArchive.error ?? remove.error} />
-      <div className={styles.actions}>
-        <button
-          type="button"
-          className={ui.secondary}
-          disabled={toggleArchive.isPending}
-          onClick={() => toggleArchive.mutate(undefined)}
-        >
-          {archived ? texts.details.unarchive : texts.details.archive}
-        </button>
-        {confirmingDelete ? (
-          <>
-            <span>{texts.details.deleteQuestion}</span>
-            <button
-              type="button"
-              className={ui.danger}
-              disabled={remove.isPending}
-              onClick={() =>
-                remove.mutate(undefined, {
-                  onSuccess: () => navigate("/contas"),
-                  onError: () => setConfirmingDelete(false),
-                })
-              }
-            >
-              {texts.details.deleteConfirm}
-            </button>
-            <button
-              type="button"
-              className={ui.secondary}
-              onClick={() => setConfirmingDelete(false)}
-            >
-              {texts.details.deleteCancel}
-            </button>
-          </>
-        ) : (
-          <button type="button" className={ui.danger} onClick={() => setConfirmingDelete(true)}>
-            {texts.details.delete}
-          </button>
-        )}
-      </div>
-    </section>
+    <LifecycleSection
+      archived={archived}
+      toggleArchive={toggleArchive}
+      remove={remove}
+      onDeleted={() => navigate("/contas")}
+      texts={texts.lifecycle}
+    />
   );
 }

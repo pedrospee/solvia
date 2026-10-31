@@ -1,36 +1,22 @@
 import type { AccountResponse } from "@solvia/contracts";
-import { Link, useSearchParams } from "react-router";
+import { Link } from "react-router";
 import { ErrorAlert } from "../ui/error-alert.tsx";
+import { ArchivedTag, ShowArchivedToggle, useShowArchived } from "../ui/show-archived.tsx";
 import ui from "../ui/ui.module.css";
 import { AccountBalance } from "./account-balance.tsx";
 import { isLiability, useAccounts } from "./account-queries.ts";
 import styles from "./accounts.module.css";
 import { kindLabels, texts } from "./texts.ts";
 
-// ?arquivadas=1 keeps the choice in the URL, so a reload or the back button keeps it.
-const SHOW_ARCHIVED = "arquivadas";
-
 export function AccountList() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const includeArchived = searchParams.get(SHOW_ARCHIVED) === "1";
+  const [includeArchived, setIncludeArchived] = useShowArchived();
   const accounts = useAccounts(includeArchived);
-
-  function toggleArchived(show: boolean) {
-    setSearchParams(show ? { [SHOW_ARCHIVED]: "1" } : {}, { replace: true });
-  }
 
   return (
     <>
-      <div className={styles.toolbar}>
+      <div className={ui.toolbar}>
         <h1>{texts.list.title}</h1>
-        <label className={styles.checkbox}>
-          <input
-            type="checkbox"
-            checked={includeArchived}
-            onChange={(event) => toggleArchived(event.target.checked)}
-          />
-          {texts.list.showArchived}
-        </label>
+        <ShowArchivedToggle checked={includeArchived} onChange={setIncludeArchived} />
         <Link to="/contas/nova" className={ui.button}>
           {texts.list.newAccount}
         </Link>
@@ -68,7 +54,7 @@ function AccountGroup({
   accounts: AccountResponse[];
 }) {
   return (
-    <section className={styles.section} aria-label={title}>
+    <section className={ui.section} aria-label={title}>
       <h2>{title}</h2>
       {accounts.length === 0 ? (
         <p className={ui.notice}>{texts.list.emptyGroup}</p>
@@ -95,9 +81,7 @@ function AccountGroup({
                 <tr key={account.id}>
                   <td>
                     <Link to={`/contas/${account.id}`}>{account.name}</Link>
-                    {account.archivedAt !== null && (
-                      <span className={styles.tag}>{texts.list.archived}</span>
-                    )}
+                    {account.archivedAt !== null && <ArchivedTag />}
                   </td>
                   <td className={styles.wide}>{account.institution ?? ""}</td>
                   <td>{kindLabels[account.kind]}</td>

@@ -9,7 +9,6 @@ import { type FormEvent, type ReactNode, useState } from "react";
 import { parseAmountInput, toAmountInput } from "../format/amount.ts";
 import { Field } from "../ui/field.tsx";
 import ui from "../ui/ui.module.css";
-import styles from "./accounts.module.css";
 import { currencyLabels, kindLabels, texts } from "./texts.ts";
 
 /** What the form gives back: trimmed text, and the limit only for a bank account. */
@@ -90,7 +89,7 @@ export function AccountForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
+    <form className={ui.form} onSubmit={submit} noValidate>
       <Field label={texts.form.name} error={errors.name}>
         {(control) => (
           <input {...control} value={name} onChange={(event) => setName(event.target.value)} />
@@ -156,7 +155,7 @@ export function AccountForm({
           )}
         </Field>
       )}
-      <div className={styles.actions}>
+      <div className={ui.actions}>
         <button type="submit" className={ui.button} disabled={pending}>
           {pending ? pendingLabel : submitLabel}
         </button>

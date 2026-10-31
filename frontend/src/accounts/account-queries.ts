@@ -1,8 +1,7 @@
 import { type AccountKindJson, liabilityAccountKinds } from "@solvia/contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useApi } from "../api/api-context.tsx";
 import { callApi } from "../api/call-api.ts";
-import type { ApiClient } from "../api/client.ts";
 
 export const accountKeys = {
   all: ["accounts"] as const,
@@ -40,20 +39,5 @@ export function useAccountBalance(id: string) {
   return useQuery({
     queryKey: accountKeys.balance(id),
     queryFn: () => callApi(api.api.accounts[":id"].balance.$get({ param: { id } })),
-  });
-}
-
-/**
- * A change to accounts. Afterwards every account query is refetched: lists, details and
- * balances, so no screen shows what the change made stale (ADR-0005, D4).
- */
-export function useAccountMutation<Input, Output>(
-  call: (api: ApiClient, input: Input) => Promise<Output>,
-) {
-  const api = useApi();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: Input) => call(api, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: accountKeys.all }),
   });
 }
