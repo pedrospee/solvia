@@ -6,6 +6,7 @@ import {
   currencySchema,
   type ExchangeRateSourceJson,
   exchangeRateSourceSchema,
+  liabilityAccountKinds,
   type SystemPostingRoleJson,
   type TransactionTypeJson,
   transactionTypeSchema,
@@ -37,6 +38,7 @@ describe("contracts stay consistent with the core", () => {
   it("account kinds", () => {
     expectTypeOf<AccountKindJson>().toEqualTypeOf<AccountKind>();
     expect(accountKindSchema.options).toEqual([...ASSET_ACCOUNT_KINDS, ...LIABILITY_ACCOUNT_KINDS]);
+    expect(liabilityAccountKinds).toEqual(LIABILITY_ACCOUNT_KINDS);
   });
 
   it("category natures", () => {

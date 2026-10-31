@@ -1,0 +1,100 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.toolbar h1 {
+  margin: 0 auto 0 0;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+}
+
+.table th,
+.table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.amount {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table .amount {
+  text-align: right;
+}
+
+/* On a phone the balance matters most: the institution and currency (already in the amount's
+   symbol) give way to it. */
+@media (max-width: 40rem) {
+  .wide {
+    display: none;
+  }
+}
+
+.tag {
+  margin-left: 0.5rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.overdraft {
+  display: block;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  white-space: normal;
+}
+
+.exceeded {
+  display: block;
+  white-space: normal;
+  color: var(--color-warning);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+  max-width: 32rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.section {
+  margin-top: 2rem;
+}
+
+.summary {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
