@@ -12,6 +12,7 @@ export {
   accountResponseSchema,
   type CreateAccountRequest,
   createAccountRequestSchema,
+  liabilityAccountKinds,
   listAccountsQuerySchema,
   type UpdateAccountRequest,
   updateAccountRequestSchema,

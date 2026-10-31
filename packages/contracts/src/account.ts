@@ -18,6 +18,20 @@ export const accountKindSchema = z.enum([
 
 export type AccountKindJson = z.infer<typeof accountKindSchema>;
 
+/**
+ * The kinds whose balance is money owed; every other kind holds money. It decides how a
+ * balance reads (accountBalanceResponseSchema), so clients need it too. Kept explicit like
+ * accountKindSchema, and checked against the core's LIABILITY_ACCOUNT_KINDS by the backend.
+ */
+export const liabilityAccountKinds = [
+  "CREDIT_CARD",
+  "LOAN",
+  "FINANCING",
+  "INFORMAL_DEBT",
+  "PERSONAL_DEBT",
+  "OTHER_LIABILITY",
+] as const satisfies readonly AccountKindJson[];
+
 // Only the representation is checked here. Whether a name may be empty or which
 // accounts may have an overdraft limit are rules of @solvia/core (BR-22).
 
