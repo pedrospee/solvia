@@ -21,6 +21,8 @@ export type AppDependencies = Readonly<{
   db: AppDatabase;
   /** The Host values the server answers to: see localHosts (docs/security.md). */
   allowedHosts: readonly string[];
+  /** Origins allowed besides the server's own: see devUiOrigins (ADR-0005, D2). */
+  allowedOrigins?: readonly string[];
 }>;
 
 /**
@@ -28,14 +30,14 @@ export type AppDependencies = Readonly<{
  * complete route types for `hono/client` (ADR-0003). Starting the server is
  * the job of main.ts, so tests call `app.request()` directly.
  */
-export function createApp({ db, allowedHosts }: AppDependencies) {
+export function createApp({ db, allowedHosts, allowedOrigins = [] }: AppDependencies) {
   const accountService = createAccountService(db);
   const categoryService = createCategoryService(db);
   const exchangeRateService = createExchangeRateService(createExchangeRateRepository(db));
   const transactionService = createTransactionService(db);
 
   const app = new Hono()
-    .use(localRequestGuard(allowedHosts))
+    .use(localRequestGuard(allowedHosts, allowedOrigins))
     .use(
       bodyLimit({
         maxSize: MAX_BODY_SIZE,
