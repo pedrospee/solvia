@@ -226,6 +226,27 @@ slice ends with `npm run check` green, CI green, and docs updated in the same pu
 - **Done when:** the UI opens at `http://127.0.0.1:5173` and shows the health status; a `POST` from
   the UI succeeds and a `POST` with any other `Origin` is still a 403.
 
+#### Verified in slice 1
+
+- **`AppType` type-checks under the frontend's options** (bundler resolution, DOM, JSX): no
+  declaration file is needed (ADR-0003's known risk). The frontend's `tsc` reads 38 backend source
+  files to do it.
+- **Side effect: Node's types reach the UI.** Through those files, `@types/better-sqlite3`
+  references `@types/node`, so `process`, `Buffer` and `node:*` imports would type-check in UI
+  code. Biome stops them instead: on `frontend/src` (tests excepted) `noNodejsModules`,
+  `noProcessGlobal` and `noRestrictedGlobals` (`Buffer`, `global`, `require`) are errors, next to
+  the import rules of D3 and D7. A probe file with each violation fails the lint; a declaration file
+  for `AppType` is still the refinement if this ever proves insufficient.
+- **The in-process API in a DOM test environment:** Vite transforms code for the browser, which
+  turns the backend's `new URL("./migrations", import.meta.url)` into an asset URL. The frontend's
+  Vitest project therefore loads `backend/src` with Node itself (`server.deps.external`), as the
+  backend runs in production.
+- **The bundle** holds no backend code (no `better-sqlite3`, Drizzle, `createApp` or test
+  fixtures). It is one 564 KB chunk (170 KB gzip), mostly React DOM and Zod; Vite's size warning is
+  raised to 1 MB, as code splitting buys nothing on the loopback address.
+- **`npm run dev`** runs both servers through `scripts/dev.ts` (no dependency): Ctrl+C stops both,
+  and when one stops the other does too.
+
 ### Slice 2 — App shell and accounts
 
 - Layout, navigation, routes (D5), loading and error states, the error-code → message map (D8).

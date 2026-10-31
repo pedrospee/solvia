@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { serve } from "@hono/node-server";
 import { createApp } from "./http/app.ts";
-import { localHosts } from "./http/local-request-guard.ts";
+import { devUiOrigins, localHosts } from "./http/local-request-guard.ts";
 import { loadEnvironment } from "./infrastructure/config/environment.ts";
 import { createDatabase, openSqlite } from "./infrastructure/database/client.ts";
 import {
@@ -34,6 +34,7 @@ try {
 const app = createApp({
   db: createDatabase(sqlite),
   allowedHosts: localHosts(environment.PORT),
+  allowedOrigins: devUiOrigins(environment.NODE_ENV),
 });
 const server = serve({ fetch: app.fetch, hostname: HOSTNAME, port: environment.PORT }, (info) => {
   console.log(`Solvia API on http://${info.address}:${info.port} (${environment.NODE_ENV}).`);

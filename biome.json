@@ -33,5 +33,62 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "frontend/src/**",
+        "!frontend/src/**/*.test.ts",
+        "!frontend/src/**/*.test.tsx",
+        "!frontend/src/test-fixtures.tsx",
+        "!frontend/src/test-setup.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@solvia/backend/testing": "Only tests run backend code (ADR-0005, D10).",
+                  "@solvia/core": {
+                    "allowImportNames": [
+                      "moneyFromDecimal",
+                      "formatDecimal",
+                      "MINOR_UNIT_DIGITS",
+                      "parseLocalDate",
+                      "Money",
+                      "Currency",
+                      "LocalDate"
+                    ],
+                    "message": "The UI uses only the money and date helpers of @solvia/core; financial rules stay on the server (ADR-0005, D7)."
+                  }
+                },
+                "patterns": [
+                  {
+                    "group": ["**/backend/**", "!@solvia/backend/rpc"],
+                    "message": "The UI reaches the backend only over HTTP, through the AppType of @solvia/backend/rpc (ADR-0005, D3)."
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "Buffer": "The UI runs in the browser: Node's Buffer does not exist there (ADR-0005, D1).",
+                  "global": "The UI runs in the browser: use globalThis (ADR-0005, D1).",
+                  "require": "The UI is an ES module bundle: use import (ADR-0005, D1)."
+                }
+              }
+            }
+          },
+          "correctness": {
+            "noNodejsModules": "error",
+            "noProcessGlobal": "error"
+          }
+        }
+      }
+    }
+  ]
 }

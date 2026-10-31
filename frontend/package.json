@@ -1,0 +1,29 @@
+{
+  "name": "@solvia/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Solvia UI: React, served by Vite in development and by the backend for daily use.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@solvia/backend": "*",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "jsdom": "30.1.3",
+    "vite": "8.3.5"
+  },
+  "dependencies": {
+    "@solvia/contracts": "*",
+    "@tanstack/react-query": "5.105.0",
+    "hono": "4.13.14",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

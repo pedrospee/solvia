@@ -1,0 +1,21 @@
+/* Light and dark follow the system (ADR-0005, D9). */
+:root {
+  color-scheme: light dark;
+  --color-text: #1b1f24;
+  --color-background: #ffffff;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #e6e8eb;
+    --color-background: #15181c;
+  }
+}
+
+body {
+  margin: 0;
+  color: var(--color-text);
+  background: var(--color-background);
+}

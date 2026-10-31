@@ -11,7 +11,7 @@
 npm install            # also enables the Git hooks (core.hooksPath = .githooks)
 cp .env.example .env   # then set DATABASE_PATH and BACKUP_DIR; never commit .env
 npm run db:migrate     # creates the database and applies the migrations
-npm run dev            # API on http://127.0.0.1:3000
+npm run dev            # API on http://127.0.0.1:3000 and the UI on http://127.0.0.1:5173
 ```
 
 The `.env` file lives at the repository root; the backend and its scripts read it from there.
@@ -21,11 +21,12 @@ The `.env` file lives at the repository root; the backend and its scripts read i
 
 An npm workspaces monorepo ([ADR-0001](adr/0001-monorepo-with-npm-workspaces.md)):
 
-| Workspace            | Package             | Contents                                                    |
-| -------------------- | ------------------- | ----------------------------------------------------------- |
-| `packages/core`      | `@solvia/core`      | Pure financial core; public API in `src/index.ts`           |
-| `packages/contracts` | `@solvia/contracts` | Zod schemas of the API's JSON requests and responses        |
-| `backend`            | `@solvia/backend`   | HTTP API (Hono), use cases and SQLite persistence (Drizzle) |
+| Workspace            | Package             | Contents                                                            |
+| -------------------- | ------------------- | ------------------------------------------------------------------- |
+| `packages/core`      | `@solvia/core`      | Pure financial core; public API in `src/index.ts`                   |
+| `packages/contracts` | `@solvia/contracts` | Zod schemas of the API's JSON requests and responses                |
+| `backend`            | `@solvia/backend`   | HTTP API (Hono), use cases and SQLite persistence (Drizzle)         |
+| `frontend`           | `@solvia/frontend`  | React UI built with Vite ([ADR-0005](adr/0005-minimal-frontend.md)) |
 
 Development tools (TypeScript, Vitest, Biome, `@types/node`) are root development dependencies. Runtime dependencies are declared in the workspace that uses them.
 
@@ -33,26 +34,27 @@ Development tools (TypeScript, Vitest, Biome, `@types/node`) are root developmen
 
 Run from the repository root:
 
-| Script                              | What it does                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------- |
-| `npm run check`                     | typecheck + lint + tests across all workspaces — **run before every commit**          |
-| `npm test` / `npm run test:watch`   | Vitest once / in watch mode, every workspace                                          |
-| `npm run lint` / `npm run lint:fix` | Biome check / apply safe fixes and formatting                                         |
-| `npm run typecheck`                 | TypeScript without emitting, per workspace                                            |
-| `npm run dev`                       | Runs the API from source on `127.0.0.1`, restarting when backend or core files change |
-| `npm run build` / `npm start`       | Compile the backend to `backend/dist/` / run the compiled app                         |
-| `npm run db:migrate`                | Applies pending migrations; backs up an existing database first                       |
-| `npm run db:generate`               | Generates a new migration after a schema change                                       |
-| `npm run db:backup`                 | Writes a verified backup to `BACKUP_DIR`                                              |
-| `npm run db:restore -- <file>`      | Replaces the database with a backup, after a verified backup of the current one       |
-| `npm run data:export`               | Writes every record as JSON to `EXPORT_DIR`                                           |
-| `npm run secrets:scan`              | Gitleaks scan of the whole Git history                                                |
+| Script                               | What it does                                                                                                         |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                      | typecheck + lint + tests across all workspaces — **run before every commit**                                         |
+| `npm test` / `npm run test:watch`    | Vitest once / in watch mode, every workspace                                                                         |
+| `npm run lint` / `npm run lint:fix`  | Biome check / apply safe fixes and formatting                                                                        |
+| `npm run typecheck`                  | TypeScript without emitting, per workspace                                                                           |
+| `npm run dev`                        | Runs the API (restarting when backend or core files change) and the UI's Vite dev server together; Ctrl+C stops both |
+| `npm run dev:api` / `npm run dev:ui` | Only the API / only the UI (the UI needs the API for its `/api` calls)                                               |
+| `npm run build` / `npm start`        | Compile the backend to `backend/dist/` and bundle the UI to `frontend/dist/` / run the compiled API                  |
+| `npm run db:migrate`                 | Applies pending migrations; backs up an existing database first                                                      |
+| `npm run db:generate`                | Generates a new migration after a schema change                                                                      |
+| `npm run db:backup`                  | Writes a verified backup to `BACKUP_DIR`                                                                             |
+| `npm run db:restore -- <file>`       | Replaces the database with a backup, after a verified backup of the current one                                      |
+| `npm run data:export`                | Writes every record as JSON to `EXPORT_DIR`                                                                          |
+| `npm run secrets:scan`               | Gitleaks scan of the whole Git history                                                                               |
 
 ### Working with one workspace
 
 ```sh
 npm run typecheck -w @solvia/core        # a script of one workspace
-npx vitest run --project core            # tests of one workspace (core | contracts | backend)
+npx vitest run --project core            # tests of one workspace (core | contracts | backend | frontend)
 npm install <pkg> -w @solvia/backend     # add a dependency to one workspace (document why first)
 ```
 
@@ -93,6 +95,7 @@ SQLite through Drizzle ([ADR-0002](adr/0002-persistence-with-sqlite-and-drizzle.
 - Domain failures throw `DomainError` with a stable `code`.
 - Tests live next to the code (`*.test.ts`); reference the rule ID (`BR-xx`) in the `describe` name when a test covers a business rule.
 - Test data comes from fictitious fixtures (`test-fixtures.ts`) and is excluded from the build.
+- **UI** ([ADR-0005](adr/0005-minimal-frontend.md)): every text the user reads is in Brazilian Portuguese, in a `texts.ts` per screen. Every call goes through `callApi`, and screens decide on `ApiRequestError.code`, never on a message. Screen tests run against the real API in process (`createTestApi` in `frontend/src/test-fixtures.tsx`), not against mocks.
 
 ## Workflow
 

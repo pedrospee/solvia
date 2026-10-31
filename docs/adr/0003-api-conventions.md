@@ -151,6 +151,7 @@ Known risk, to verify when the frontend exists: type-checking the frontend then 
 the backend sources it reaches, under the frontend's compiler options. If that causes problems,
 the refinement is for the backend to emit a declaration file for `AppType` only. It stays the same
 single source of truth; no separate API-types package is created before the problem exists.
+Verified in Phase 2C slice 1: see [ADR-0005](0005-minimal-frontend.md#verified-in-slice-1).
 
 ## Consequences
 

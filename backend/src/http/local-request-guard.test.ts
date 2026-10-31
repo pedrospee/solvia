@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestDatabase, type TestDatabase } from "../infrastructure/database/test-fixtures.ts";
 import { createApp } from "./app.ts";
-import { localHosts } from "./local-request-guard.ts";
+import { DEV_UI_PORT, devUiOrigins, localHosts } from "./local-request-guard.ts";
 
 // The API has no authentication and trusts that only this machine reaches it
 // (docs/security.md). A browser on this machine is the way around that: a malicious
@@ -116,6 +116,84 @@ describe("Origin (CSRF)", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+});
+
+describe("Origin of the development UI (ADR-0005, D2)", () => {
+  const DEV_UI = `http://127.0.0.1:${DEV_UI_PORT}`;
+
+  function appFor(nodeEnv: string) {
+    return createApp({
+      db: database.db,
+      allowedHosts: localHosts(PORT),
+      allowedOrigins: devUiOrigins(nodeEnv),
+    });
+  }
+
+  function archiveFrom(target: ReturnType<typeof createApp>, id: string, origin: string) {
+    return target.request(`${LOCAL}/api/accounts/${id}/archive`, {
+      method: "POST",
+      headers: { Host: `127.0.0.1:${PORT}`, Origin: origin },
+    });
+  }
+
+  it("accepts changes from the Vite dev server in development, by IP or by localhost", async () => {
+    const development = appFor("development");
+
+    for (const origin of [
+      DEV_UI,
+      `http://localhost:${DEV_UI_PORT}`,
+      `HTTP://LOCALHOST:${DEV_UI_PORT}`,
+    ]) {
+      const id = await createAccount();
+      expect((await archiveFrom(development, id, origin)).status).toBe(200);
+    }
+  });
+
+  it("rejects the dev server's origin outside development", async () => {
+    for (const nodeEnv of ["production", "test"]) {
+      const id = await createAccount();
+      expect(await errorOf(await archiveFrom(appFor(nodeEnv), id, DEV_UI))).toEqual([
+        403,
+        "ORIGIN_NOT_ALLOWED",
+      ]);
+    }
+  });
+
+  it("still rejects every other origin in development", async () => {
+    const development = appFor("development");
+    const id = await createAccount();
+
+    for (const origin of [
+      "https://evil.example",
+      `http://127.0.0.1:${DEV_UI_PORT + 1}`,
+      `https://127.0.0.1:${DEV_UI_PORT}`,
+      "null",
+    ]) {
+      expect(await errorOf(await archiveFrom(development, id, origin))).toEqual([
+        403,
+        "ORIGIN_NOT_ALLOWED",
+      ]);
+    }
+  });
+
+  it("does not let the dev server's origin through a foreign Host", async () => {
+    const response = await appFor("development").request(`${LOCAL}/api/accounts`, {
+      headers: { Host: `127.0.0.1:${DEV_UI_PORT}`, Origin: DEV_UI },
+    });
+
+    expect(await errorOf(response)).toEqual([403, "HOST_NOT_ALLOWED"]);
+  });
+});
+
+describe("devUiOrigins", () => {
+  it("lists the dev server's two origins in development only", () => {
+    expect(devUiOrigins("development")).toEqual([
+      `http://127.0.0.1:${DEV_UI_PORT}`,
+      `http://localhost:${DEV_UI_PORT}`,
+    ]);
+    expect(devUiOrigins("production")).toEqual([]);
+    expect(devUiOrigins("test")).toEqual([]);
   });
 });
 
