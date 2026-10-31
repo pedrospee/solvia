@@ -3,6 +3,7 @@ export const texts = {
   appName: "Solvia",
   navigation: "Navegação principal",
   accounts: "Contas",
+  categories: "Categorias",
   notFound: "Página não encontrada.",
   backHome: "Ir para as contas",
 } as const;

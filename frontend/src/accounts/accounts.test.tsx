@@ -11,6 +11,7 @@ import {
   renderApp,
   type TestApi,
 } from "../test-fixtures.tsx";
+import { texts as uiTexts } from "../ui/texts.ts";
 import { texts } from "./texts.ts";
 
 // Every test drives the real app against the real API in process (ADR-0005, D10).
@@ -181,7 +182,7 @@ describe("account details", () => {
     const bank = await createAccount(api.client);
     const { user } = renderApp(api.client, `/contas/${bank.id}`);
 
-    await user.click(await screen.findByRole("button", { name: texts.details.archive }));
+    await user.click(await screen.findByRole("button", { name: texts.lifecycle.archive }));
     expect((await screen.findByRole("note")).textContent).toMatch(
       /^Conta arquivada em \d{2}\/\d{2}\/\d{4}\.$/,
     );
@@ -189,13 +190,13 @@ describe("account details", () => {
 
     await user.click(screen.getByRole("link", { name: texts.details.back }));
     expect(await screen.findByText(texts.list.empty)).toBeDefined();
-    await user.click(screen.getByLabelText(texts.list.showArchived));
+    await user.click(screen.getByLabelText(uiTexts.showArchived));
     const row = (await screen.findByRole("link", { name: "Demo Bank" })).closest("tr");
-    expect(row && within(row).getByText(texts.list.archived)).toBeDefined();
+    expect(row && within(row).getByText(uiTexts.archived)).toBeDefined();
 
     await user.click(screen.getByRole("link", { name: "Demo Bank" }));
-    await user.click(await screen.findByRole("button", { name: texts.details.unarchive }));
-    expect(await screen.findByRole("button", { name: texts.details.archive })).toBeDefined();
+    await user.click(await screen.findByRole("button", { name: texts.lifecycle.unarchive }));
+    expect(await screen.findByRole("button", { name: texts.lifecycle.archive })).toBeDefined();
     expect(screen.queryByRole("note")).toBeNull();
     expect(await accountsInApi(false)).toHaveLength(1);
   });
@@ -204,13 +205,13 @@ describe("account details", () => {
     const bank = await createAccount(api.client);
     const { user } = renderApp(api.client, `/contas/${bank.id}`);
 
-    await user.click(await screen.findByRole("button", { name: texts.details.delete }));
-    await user.click(screen.getByRole("button", { name: texts.details.deleteCancel }));
+    await user.click(await screen.findByRole("button", { name: texts.lifecycle.delete }));
+    await user.click(screen.getByRole("button", { name: uiTexts.deleteCancel }));
     expect(await accountsInApi()).toHaveLength(1);
 
-    await user.click(screen.getByRole("button", { name: texts.details.delete }));
-    expect(screen.getByText(texts.details.deleteQuestion)).toBeDefined();
-    await user.click(screen.getByRole("button", { name: texts.details.deleteConfirm }));
+    await user.click(screen.getByRole("button", { name: texts.lifecycle.delete }));
+    expect(screen.getByText(texts.lifecycle.deleteQuestion)).toBeDefined();
+    await user.click(screen.getByRole("button", { name: uiTexts.deleteConfirm }));
 
     expect(await screen.findByText(texts.list.empty)).toBeDefined();
     expect(await accountsInApi()).toEqual([]);
@@ -221,11 +222,11 @@ describe("account details", () => {
     await recordOpeningBalance(api.client, bank.id, eur("1000"));
     const { user } = renderApp(api.client, `/contas/${bank.id}`);
 
-    await user.click(await screen.findByRole("button", { name: texts.details.delete }));
-    await user.click(screen.getByRole("button", { name: texts.details.deleteConfirm }));
+    await user.click(await screen.findByRole("button", { name: texts.lifecycle.delete }));
+    await user.click(screen.getByRole("button", { name: uiTexts.deleteConfirm }));
 
     expect((await screen.findByRole("alert")).textContent).toMatch(/^Esta conta tem transações/);
-    expect(screen.getByRole("button", { name: texts.details.delete })).toBeDefined();
+    expect(screen.getByRole("button", { name: texts.lifecycle.delete })).toBeDefined();
     expect(await accountsInApi()).toHaveLength(1);
   });
 

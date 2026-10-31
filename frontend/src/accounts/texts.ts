@@ -23,13 +23,11 @@ export const texts = {
   list: {
     title: "Contas",
     newAccount: "Nova conta",
-    showArchived: "Mostrar arquivadas",
     assets: "Contas e investimentos",
     liabilities: "Cartões e dívidas",
     loading: "Carregando contas…",
     empty: "Nenhuma conta cadastrada ainda. Cadastre a primeira para começar.",
     emptyGroup: "Nenhuma conta neste grupo.",
-    archived: "Arquivada",
     columns: {
       name: "Nome",
       institution: "Instituição",
@@ -74,15 +72,14 @@ export const texts = {
     saving: "Salvando…",
     saved: "Alterações salvas.",
     archivedOn: (date: string) => `Conta arquivada em ${date}.`,
-    lifecycleTitle: "Arquivar ou excluir",
+  },
+  lifecycle: {
+    title: "Arquivar ou excluir",
+    hint: "Uma conta arquivada sai da lista, mas o saldo e as transações dela continuam valendo.",
     archive: "Arquivar conta",
     unarchive: "Desarquivar conta",
-    archiveHint:
-      "Uma conta arquivada sai da lista, mas o saldo e as transações dela continuam valendo.",
     delete: "Excluir conta",
     deleteQuestion:
       "Excluir esta conta definitivamente? Só é possível se ela não tiver transações.",
-    deleteConfirm: "Sim, excluir",
-    deleteCancel: "Não, manter",
   },
 } as const;

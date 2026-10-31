@@ -1,9 +1,10 @@
 import { createAccountRequestSchema } from "@solvia/contracts";
 import { Link, useNavigate } from "react-router";
 import { ApiRequestError, callApi } from "../api/call-api.ts";
+import { useApiMutation } from "../api/use-api-mutation.ts";
 import { ErrorAlert } from "../ui/error-alert.tsx";
 import { AccountForm, type AccountFormValues } from "./account-form.tsx";
-import { useAccountMutation } from "./account-queries.ts";
+import { accountKeys } from "./account-queries.ts";
 import { texts } from "./texts.ts";
 
 const EMPTY: AccountFormValues = {
@@ -16,7 +17,7 @@ const EMPTY: AccountFormValues = {
 
 export function NewAccount() {
   const navigate = useNavigate();
-  const create = useAccountMutation((api, values: AccountFormValues) => {
+  const create = useApiMutation(accountKeys.all, (api, values: AccountFormValues) => {
     // The contract's own schema checks the request's shape before it leaves (ADR-0005, D6).
     const request = createAccountRequestSchema.safeParse({
       name: values.name,

@@ -1,6 +1,6 @@
 // Test helpers: never imported by the app, so never bundled.
 import { createTestApp, createTestDatabase } from "@solvia/backend/testing";
-import type { CreateAccountRequest, MoneyJson } from "@solvia/contracts";
+import type { CreateAccountRequest, CreateCategoryRequest, MoneyJson } from "@solvia/contracts";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -58,6 +58,34 @@ export function createAccount(client: ApiClient, account: Partial<CreateAccountR
   return callApi(
     client.api.accounts.$post({
       json: { name: "Demo Bank", kind: "BANK", currency: "EUR", ...account },
+    }),
+  );
+}
+
+export function createCategory(client: ApiClient, category: Partial<CreateCategoryRequest> = {}) {
+  return callApi(
+    client.api.categories.$post({
+      json: { name: "Demo Category", nature: "EXPENSE", ...category },
+    }),
+  );
+}
+
+export function recordExpense(
+  client: ApiClient,
+  paidFromAccountId: string,
+  categoryId: string,
+  amount: MoneyJson,
+) {
+  return callApi(
+    client.api.transactions.$post({
+      json: {
+        type: "EXPENSE",
+        date: "2026-01-02",
+        description: "Expense",
+        paidFromAccountId,
+        categoryId,
+        amount,
+      },
     }),
   );
 }
