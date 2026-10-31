@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { callApi } from "../api/call-api.ts";
 import {
@@ -212,6 +212,42 @@ describe("category details", () => {
 
     expect((await screen.findByRole("alert")).textContent).toMatch(
       /^A categoria principal está arquivada/,
+    );
+  });
+
+  it("shows only the latest action's result, never an earlier failure", async () => {
+    const food = await createCategory(api.client, { name: "Alimentação" });
+    const market = await createCategory(api.client, { name: "Mercado", parentId: food.id });
+    await archive(market.id);
+    const { user } = renderApp(api.client, `/categorias/${food.id}`);
+
+    // Delete fails: the category still has a (now archived) child.
+    await user.click(await screen.findByRole("button", { name: texts.lifecycle.delete }));
+    await user.click(screen.getByRole("button", { name: uiTexts.deleteConfirm }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(
+      /^Esta categoria tem subcategorias e não pode ser excluída/,
+    );
+
+    // Archiving then succeeds, since no child is active: the delete error must go.
+    await user.click(screen.getByRole("button", { name: texts.lifecycle.archive }));
+    expect((await screen.findByRole("note")).textContent).toMatch(/^Categoria arquivada em/);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("replaces an earlier failure with the latest one", async () => {
+    const food = await createCategory(api.client, { name: "Alimentação" });
+    await createCategory(api.client, { name: "Mercado", parentId: food.id });
+    const { user } = renderApp(api.client, `/categorias/${food.id}`);
+
+    await user.click(await screen.findByRole("button", { name: texts.lifecycle.archive }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/^Arquive as subcategorias/);
+
+    await user.click(screen.getByRole("button", { name: texts.lifecycle.delete }));
+    await user.click(screen.getByRole("button", { name: uiTexts.deleteConfirm }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toMatch(
+        /^Esta categoria tem subcategorias e não pode ser excluída/,
+      ),
     );
   });
 

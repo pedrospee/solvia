@@ -8,6 +8,7 @@ type Action = {
   mutate: (input: undefined, options?: { onSuccess?: () => void; onError?: () => void }) => void;
   isPending: boolean;
   error: unknown;
+  reset: () => void;
 };
 
 export type LifecycleTexts = {
@@ -22,7 +23,9 @@ export type LifecycleTexts = {
 /**
  * Archive or unarchive, and delete after an inline confirmation: a browser dialog would be
  * neither styled nor testable. The API decides whether either is allowed; its refusal (an
- * item in use, active children…) is explained here.
+ * item in use, active children…) is explained here. Starting one action clears the other's
+ * result, so only the latest one is shown: a failed delete followed by a successful archive
+ * must not still read as a failure.
  */
 export function LifecycleSection({
   archived,
@@ -49,7 +52,10 @@ export function LifecycleSection({
           type="button"
           className={styles.secondary}
           disabled={toggleArchive.isPending}
-          onClick={() => toggleArchive.mutate(undefined)}
+          onClick={() => {
+            remove.reset();
+            toggleArchive.mutate(undefined);
+          }}
         >
           {archived ? texts.unarchive : texts.archive}
         </button>
@@ -60,12 +66,13 @@ export function LifecycleSection({
               type="button"
               className={styles.danger}
               disabled={remove.isPending}
-              onClick={() =>
+              onClick={() => {
+                toggleArchive.reset();
                 remove.mutate(undefined, {
                   onSuccess: onDeleted,
                   onError: () => setConfirmingDelete(false),
-                })
-              }
+                });
+              }}
             >
               {uiTexts.deleteConfirm}
             </button>
