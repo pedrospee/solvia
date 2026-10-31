@@ -286,6 +286,22 @@ slice ends with `npm run check` green, CI green, and docs updated in the same pu
   `CATEGORY_PARENT_ARCHIVED`).
 - **Done when:** the BR-70 / BR-71 hierarchy rules can be exercised from the UI.
 
+#### Done in slice 3
+
+- **Routes:** `/categorias`, `/categorias/nova` (`?pai=<id>` starts a subcategory under that
+  parent), `/categorias/:id`.
+- **The tree is built in the browser** from the flat list (ADR-0003), expenses first, sorted by name
+  with the pt-BR collator at each level.
+- **The parent list is narrowed to what the hierarchy allows:** active top-level categories of the
+  same nature, never the category itself; changing the nature clears the parent; a category with
+  children cannot choose one. This only narrows the choice: the server still validates the whole
+  tree (BR-70, BR-71), and every `409` it can answer is explained in pt-BR.
+- **Shared with accounts** (extracted, not copied): "show archived" in the URL, the archive and
+  delete section with its inline confirmation, and `useApiMutation`, which refetches a feature's
+  queries after a change.
+- **Lists in tests are compared by name:** the API orders by creation time, then by a random id, so
+  two items created in the same millisecond come back in any order.
+
 ### Slice 4 — Manual exchange rates
 
 - Date input (from slice 2): a `YYYY-MM-DD` value for the API, shown and typed as `dd/mm/aaaa`.
