@@ -98,9 +98,13 @@ frontend/                     @solvia/frontend
 ├── index.html                the page Vite serves and builds (lang pt-BR)
 ├── vite.config.ts            React plugin; dev server on 127.0.0.1:5173 with the /api proxy
 └── src/
-    ├── api/                  typed client (hc<AppType>), callApi and ApiRequestError, ApiProvider
+    ├── api/                  typed client (hc<AppType>), callApi, ApiRequestError, error messages by code
+    ├── format/               pt-BR amounts (display and input) and dates
+    ├── ui/                   shared components: Field, ErrorAlert, buttons
+    ├── layout/               header, navigation, page not found
     ├── health/               API status (GET /api/health)
-    ├── app.tsx, main.tsx     the app and its bootstrap (TanStack Query, API client)
+    ├── accounts/             list with balances, create, details: edit, archive, delete
+    ├── app.tsx, main.tsx     routes (React Router) and bootstrap (TanStack Query, API client)
     └── test-fixtures.tsx     the real API in process, for tests only
 scripts/dev.ts                npm run dev: API and UI together
 docs/adr/                     architecture decision records
@@ -168,7 +172,7 @@ Phase 2C is delivered in slices, each merged into `main` before the next one sta
 | ----- | ------------------------------------------------------------------------------- | ------- |
 | 0     | Housekeeping: lint warning, patch updates, request body limit                   | ✅ Done |
 | 1     | Frontend skeleton, development origin allowed only in development, typed client | ✅ Done |
-| 2     | App shell and accounts                                                          |         |
+| 2     | App shell and accounts                                                          | ✅ Done |
 | 3     | Categories                                                                      |         |
 | 4     | Manual exchange rates                                                           |         |
 | 5     | Transactions: list and details                                                  |         |

@@ -250,10 +250,33 @@ slice ends with `npm run check` green, CI green, and docs updated in the same pu
 ### Slice 2 — App shell and accounts
 
 - Layout, navigation, routes (D5), loading and error states, the error-code → message map (D8).
-- Money display and money input (D7), date input.
+- Money display and money input (D7). The date input moved to slice 4, the first screen that
+  needs one, so no slice ships an unused component.
 - Accounts: list with balance and overdraft information, create, edit, archive / unarchive, delete;
   `ACCOUNT_IN_USE` explained to the user.
 - **Done when:** every account endpoint is usable from the UI, with tests against the in-process API.
+
+#### Done in slice 2
+
+- **Routes in pt-BR**, like the texts: `/contas`, `/contas/nova`, `/contas/:id`; `/` opens the
+  accounts, any other path a "page not found". "Show archived" lives in the URL (`?arquivadas=1`).
+- **Assets and liabilities are listed apart**, because a balance means money held for one and money
+  owed for the other. The UI learns which kinds are liabilities from `@solvia/contracts`
+  (`liabilityAccountKinds`), not from the core: it is kept explicit like `accountKindSchema`, and the
+  backend's contract consistency test fails if it drifts from `LIABILITY_ACCOUNT_KINDS`. D7's list of
+  core helpers is unchanged.
+- **Amounts typed in pt-BR** (`parseAmountInput`): a comma before the cents, dots only between
+  thousands. `12.50` is refused rather than guessed, since in pt-BR it reads as 1250. Display goes
+  through `Intl.NumberFormat("pt-BR")` fed with the exact decimal string, exact past 2^53.
+- **Errors by code:** `errorMessage` maps every API code a screen can receive to a pt-BR message; an
+  unknown code is named, never guessed. The API's English messages are never shown.
+- **The form checks shape only:** a name, an amount that reads as one. A financial rule (an overdraft
+  limit above zero, only on bank accounts) is the server's; the form only hides the limit for other
+  kinds, and the server's 422 is explained.
+- **Deleting asks for confirmation inline**, not in a browser dialog, so it is keyboard-usable and
+  testable. `ACCOUNT_IN_USE` explains that archiving keeps the history.
+- Checked in a real browser (Chrome) as well as in tests: light and dark, and 390 px wide, where the
+  institution and currency columns give way to the balance.
 
 ### Slice 3 — Categories
 
@@ -265,6 +288,7 @@ slice ends with `npm run check` green, CI green, and docs updated in the same pu
 
 ### Slice 4 — Manual exchange rates
 
+- Date input (from slice 2): a `YYYY-MM-DD` value for the API, shown and typed as `dd/mm/aaaa`.
 - History list (manual and transaction-derived, read-only), add a manual EUR/BRL rate.
 - "Rate on a date" lookup with the applicable-rate endpoint.
 - **Done when:** rates can be recorded and checked without curl.
